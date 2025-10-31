@@ -1,10 +1,13 @@
 <template>
   <Card title="项目" v-bind="$attrs">
     <template #extra>
-      <a-button type="link" size="small">更多</a-button>
+      <a-button type="link" size="small" @click="goMore">更多</a-button>
     </template>
-
-    <template v-for="item in items" :key="item">
+    <div v-if="loadingLocal">
+      <Skeleton active :paragraph="{ rows: 3 }" />
+    </div>
+    <Empty v-else-if="!items.length" />
+    <template v-else v-for="item in items" :key="item.id || item.title">
       <CardGrid class="!md:w-full !w-full">
         <span class="flex">
           <Icon :icon="item.icon" :color="item.color" size="30" />
@@ -20,16 +23,34 @@
   </Card>
 </template>
 <script lang="ts">
-  import { defineComponent } from 'vue';
-  import { Card } from 'ant-design-vue';
+  import { defineComponent, onMounted, ref } from 'vue';
+  import { Card, Skeleton, Empty } from 'ant-design-vue';
   import { Icon } from '/@/components/Icon';
-  import { groupItems } from './data';
+  import { getProjectList, type GroupItem } from '../devworkbench.api';
+  import { useRouter } from 'vue-router';
 
   export default defineComponent({
-    components: { Card, CardGrid: Card.Grid, Icon },
+    components: { Card, CardGrid: Card.Grid, Icon, Skeleton, Empty },
     setup() {
-      // 这里默认显示6条即可，超过6条的话，需要点击更多来查看
-      return { items: groupItems };
+      const items = ref<GroupItem[]>([]);
+      const loadingLocal = ref(true);
+      const router = useRouter();
+
+      onMounted(async () => {
+        try {
+          const res = await getProjectList({ pageSize: 6 });
+          items.value = Array.isArray(res) ? res : [];
+        } catch (error) {
+          items.value = [];
+        }
+        loadingLocal.value = false;
+      });
+
+      const goMore = () => {
+        router.push('/project/list');
+      };
+
+      return { items, loadingLocal, goMore };
     },
   });
 </script>

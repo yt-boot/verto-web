@@ -3,7 +3,7 @@
     <template #headerContent> <WorkbenchHeader /> </template>
     <div class="lg:flex">
       <div class="lg:w-7/10 w-full !mr-4 enter-y">
-        <GitlabBindCard :loading="loading" class="enter-y" />
+        <GitHubBindCard :loading="loading" class="enter-y" />
         <DynamicInfo :loading="loading" class="!my-4 enter-y" />
       </div>
       <div class="lg:w-3/10 w-full enter-y">
@@ -19,7 +19,7 @@
   import DynamicInfo from './components/DynamicInfo.vue';
   import QuickNav from './components/QuickNav.vue';
   import ProjectCard from './components/ProjectCard.vue';
-  import GitlabBindCard from './components/GitlabBindCard.vue';
+  import GitHubBindCard from './components/GitHubBindCard.vue';
 
   const loading = ref(true);
   setTimeout(() => {

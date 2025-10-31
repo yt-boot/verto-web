@@ -54,8 +54,9 @@ export const formSchema: FormSchema[] = [
     component: 'Input',
     slot: 'gitUrl',
     ifShow: ({ values }) =>{
-      console.log(values,'values===')
-      return values?.projectSource === 'existing'},
+      console.log(values,'values===',values?.projectSource === 'existing')
+      return values?.projectSource === 'existing'
+    },
     componentProps: {
       placeholder: '请选择或搜索已有仓库',
     },

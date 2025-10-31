@@ -56,11 +56,11 @@
 </template>
 
 <script lang="ts">
-  import { defineComponent } from 'vue';
+  import { defineComponent, ref } from 'vue';
   import { BasicTable, useTable, TableAction } from '/@/components/Table';
   import { useDrawer } from '/@/components/Drawer';
   import AppManageModal from './components/AppManageModal.vue';
-  import { getAppList, deleteApp, getDomainDict } from './AppManage.api';
+  import { getAppList, deleteApp, getDomainDict, getActiveStaffList } from './AppManage.api';
   import { useMessage } from '/@/hooks/web/useMessage';
   import { useRouter } from 'vue-router';
   import type { AppManageModel } from './AppManage.data';
@@ -82,18 +82,104 @@
         { title: '描述', dataIndex: 'appDescription', key: 'appDescription', ellipsis: true },
       ];
 
-      // api 适配 BasicTable（返回 { records, total }）
+      // 缓存：领域字典与人员映射
+      const domainMapRef = ref<Map<string, string>>(new Map());
+      const staffIdToNameRef = ref<Map<string, string>>(new Map());
+      const staffUsernameToNameRef = ref<Map<string, string>>(new Map());
+
+      async function ensureDomainMap() {
+        if (domainMapRef.value.size > 0) return;
+        try {
+          const resp = await getDomainDict();
+          const items = resp?.result || resp || [];
+          const map = new Map<string, string>();
+          (items || []).forEach((it: any) => {
+            if (it && (it.value != null)) {
+              map.set(String(it.value), it.text || it.label || it.title || String(it.value));
+            }
+          });
+          domainMapRef.value = map;
+        } catch (e) {
+          console.warn('加载领域字典失败', e);
+        }
+      }
+
+      async function ensureStaffMaps() {
+        if (staffIdToNameRef.value.size > 0 || staffUsernameToNameRef.value.size > 0) return;
+        try {
+          const res = await getActiveStaffList({ pageNo: 1, pageSize: 1000 });
+          const rows = res?.result?.records || res?.result || [];
+          const id2name = new Map<string, string>();
+          const username2name = new Map<string, string>();
+          (rows || []).forEach((u: any) => {
+            if (!u) return;
+            const id = u.id != null ? String(u.id) : undefined;
+            const username = u.username != null ? String(u.username) : undefined;
+            const name = u.name || u.realname || u.nickname || u.label || u.text || username || id || '';
+            if (id) id2name.set(id, name);
+            if (username) username2name.set(username, name);
+          });
+          staffIdToNameRef.value = id2name;
+          staffUsernameToNameRef.value = username2name;
+        } catch (e) {
+          console.warn('加载人员列表失败', e);
+        }
+      }
+
+      // 对列表数据进行一次性“字典+人员”文本增强（B方案）
+      async function enrichListRows(rows: AppManageModel[]): Promise<AppManageModel[]> {
+        await Promise.all([ensureDomainMap(), ensureStaffMaps()]);
+        const domainMap = domainMapRef.value;
+        const id2name = staffIdToNameRef.value;
+        const username2name = staffUsernameToNameRef.value;
+
+        return (rows || []).map((r: any) => {
+          // 领域字典文本
+          const domainCode = r?.domain != null ? String(r.domain) : '';
+          const domainText = domainMap.get(domainCode) || r?.domain_dictText || (domainCode || '未分类');
+
+          // 管理员姓名文本（支持 id/username、逗号分隔或数组）
+          const managersRaw = r?.managers;
+          const idsArr = Array.isArray(managersRaw)
+            ? managersRaw
+            : String(managersRaw || '')
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean);
+          const managersText = idsArr
+            .map((k: any) => {
+              const key = String(k);
+              return id2name.get(key) || username2name.get(key) || key;
+            })
+            .join(', ');
+
+          // 创建者文本（优先 username->name，其次 id->name）
+          const createByKey = r?.createBy != null ? String(r.createBy) : '';
+          const createByText = username2name.get(createByKey) || id2name.get(createByKey) || (r?.createBy_dictText || r?.createBy || '-');
+
+          return {
+            ...r,
+            domain_dictText: domainText,
+            managers_dictText: managersText || '-',
+            createBy_dictText: createByText,
+          };
+        });
+      }
+
+      // api 适配 BasicTable（返回 { records, total }）并进行“增强”转换
       async function listApp(params: Recordable): Promise<{ records: AppManageModel[]; total: number }> {
         const res = await getAppList(params);
         if (res && res.success) {
           const r = res.result || {};
-          return { records: r.records || [], total: r.total || 0 };
+          const rawRecords = r.records || [];
+          const enhancedRecords = await enrichListRows(rawRecords);
+          return { records: enhancedRecords, total: r.total || rawRecords.length || 0 };
         }
         createMessage.error(res?.message || '加载数据失败');
         return { records: [], total: 0 };
       }
 
-      const [registerTable] = useTable({
+      const [registerTable, { reload }] = useTable({
         title: '应用列表',
         api: listApp,
         columns,
@@ -145,7 +231,8 @@
 
       function handleDeleteClick(record: AppManageModel) {
         deleteApp({ id: record.id }, () => {
-          createMessage.success('删除成功');
+          // createMessage.success('删除成功');
+          reload();
         });
       }
 
@@ -158,9 +245,7 @@
       }
 
       function handleSuccess(result) {
-        if (result && result.id) {
-          router.push(`/appmanage/detail/${result.id}?tab=basic`);
-        }
+        reload()
       }
 
       return {

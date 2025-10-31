@@ -18,6 +18,8 @@
           placeholder="请选择应用负责人"
           :mode="'multiple'"
           :labelInValue="true"
+          :rowKey="'id'"
+          :labelKey="'name'"
         />
       </template>
       <!-- 现有项目：Git地址下拉（可搜索） -->
@@ -117,7 +119,6 @@
           // 新建模式：显示“项目来源”与新建相关字段，隐藏“已有项目”字段
           updateSchema?.([
             { field: 'projectSource', show: true },
-            { field: 'gitUrl', show: false },
             { field: 'appPath', show: true },
             { field: 'repoName', show: true },
             { field: 'gitUrlNew', show: true },
@@ -137,6 +138,16 @@
               componentProps: {
                 onInput: () => handleAutoGenGitUrl(),
                 onChange: () => handleAutoGenGitUrl(),
+              },
+            },
+            // 切换“项目来源”时，依靠 ifShow 动态显隐，无需强制隐藏 gitUrl
+            {
+              field: 'projectSource',
+              componentProps: {
+                onChange: () => {
+                  // 当切换为 new 时，尝试生成一次地址；切换为 existing 时不处理
+                  handleAutoGenGitUrl();
+                },
               },
             },
           ]);

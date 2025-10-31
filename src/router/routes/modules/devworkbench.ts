@@ -23,6 +23,15 @@ const devWorkbench: AppRouteModule = {
         currentActiveMenu: '/devworkbench/index',
       },
     },
+    {
+      path: 'dynamic',
+      name: 'DevWorkbenchDynamic',
+      component: () => import('/@/views/dashboard/devworkbench/dynamic-list.vue'),
+      meta: {
+        title: '动态列表',
+        currentActiveMenu: '/devworkbench/index',
+      },
+    },
   ],
 };
 
