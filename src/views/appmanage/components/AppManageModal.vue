@@ -317,10 +317,30 @@
         try {
           const resp = await getGitRepos({ query });
           const list = resp?.result?.repos || resp?.result || [];
-          gitUrlOptions.value = (list || []).slice(0, 50).map((item: any) => ({
-            label: item?.name ? `${item.name} (${item.clone_url || item.httpUrlToRepo || item.ssh_url || item.url})` : (item?.clone_url || item?.httpUrlToRepo || item?.ssh_url || item?.url || ''),
-            value: item?.clone_url || item?.httpUrlToRepo || item?.ssh_url || item?.url || '',
-          })).filter((opt: any) => !!opt.value);
+          gitUrlOptions.value = (list || [])
+            .slice(0, 50)
+            .map((item: any) => {
+              // 统一使用 web_url/html_url/url，并清洗反引号与空白
+              const webUrlRaw = item?.web_url ?? item?.url ?? item?.html_url ?? '';
+              const webUrl = String(webUrlRaw).replace(/`/g, '').trim();
+
+              // 将网页地址转换为可 git clone 的 HTTPS 地址（origin + pathname + .git）
+              let cloneHttpUrl = webUrl;
+              try {
+                if (webUrl) {
+                  const u = new URL(webUrl);
+                  cloneHttpUrl = `${u.origin}${u.pathname.replace(/\/$/, '')}.git`;
+                }
+              } catch {}
+
+              const displayName = item?.name || item?.full_name || cloneHttpUrl || webUrl;
+              const displayUrl = cloneHttpUrl || webUrl;
+              return {
+                label: displayName && displayUrl ? `${displayName} (${displayUrl})` : (displayUrl || displayName),
+                value: displayUrl,
+              };
+            })
+            .filter((opt: any) => !!opt.value);
         } catch (e) {
           console.warn('搜索仓库失败', e);
         }

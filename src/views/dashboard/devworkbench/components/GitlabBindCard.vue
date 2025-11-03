@@ -67,7 +67,7 @@
   }
 
   function onBindGitlab() {
-    const url = `${glob.uploadUrl}/sys/thirdLogin/render/${unref(thirdType)}`;
+    const url = `${glob.uploadUrl}/sys/thirdLoginVerto/render/${unref(thirdType)}`;
 
     // 确保只保留一个弹窗与一个监听
     if (unref(windowsIndex)) {

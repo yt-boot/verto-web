@@ -13,6 +13,9 @@ enum Api {
   getThirdAccountByUserId = '/sys/thirdApp/getThirdAccountByUserId',
   bindThirdAppAccount = '/sys/thirdApp/bindThirdAppAccount',
   deleteThirdAccount = '/sys/thirdApp/deleteThirdAccount',
+  vertoBindThirdAppAccount = '/verto/user/bindThirdAppAccount',
+  vertoGetThirdAccountByUserId = '/verto/user/getThirdAccountByUserId',
+  vertoDeleteThirdAccount = '/verto/user/deleteThirdAccount',
   agreeOrRefuseJoinTenant = '/sys/tenant/agreeOrRefuseJoinTenant',
   //更改手机号
   changePhone = '/sys/user/changePhone',
@@ -111,6 +114,14 @@ export const getThirdAccountByUserId = (params) => {
 };
 
 /**
+ * 获取账号第三方信息（Verto 扩展：与系统旧接口等价，后端同时维护 oauth_binding）
+ * @param params
+ */
+export const vertoGetThirdAccountByUserId = (params) => {
+  return defHttp.get({ url: Api.vertoGetThirdAccountByUserId, params }, { isTransformResponse: false });
+};
+
+/**
  * 根据第三方uuid绑定账号
  * @param params
  */
@@ -119,11 +130,27 @@ export const bindThirdAppAccount = (params) => {
 };
 
 /**
+ * 根据第三方uuid绑定账号（Verto 扩展：同步写入 oauth_binding）
+ * @param params
+ */
+export const vertoBindThirdAppAccount = (params) => {
+  return defHttp.post({ url: Api.vertoBindThirdAppAccount, params }, { isTransformResponse: false, joinParamsToUrl: true });
+};
+
+/**
  * 根据第三方uuid绑定账号
  * @param params
  */
 export const deleteThirdAccount = (params) => {
   return defHttp.delete({ url: Api.deleteThirdAccount, params }, { isTransformResponse:false, joinParamsToUrl: true });
+};
+
+/**
+ * 删除第三方账号（Verto 扩展：同步解绑 oauth_binding 并清理 token）
+ * @param params
+ */
+export const vertoDeleteThirdAccount = (params) => {
+  return defHttp.delete({ url: Api.vertoDeleteThirdAccount, params }, { isTransformResponse:false, joinParamsToUrl: true });
 };
 
 /**

@@ -1,7 +1,10 @@
 <template>
   <Card title="GitHub账户绑定" v-bind="$attrs">
     <template #extra>
-      <span v-if="bindGithubData && bindGithubData.sysUserId" class="text-success">已绑定：{{ bindGithubData.realname || 'GitHub 用户' }}</span>
+      <span v-if="bindGithubData && bindGithubData.sysUserId" class="text-success">
+        已绑定：{{ bindGithubData.realname || 'GitHub 用户' }}
+        <a class="ml-3" @click="onUnbindGithub">解绑</a>
+      </span>
       <span v-else class="text-warning">未绑定</span>
     </template>
     <div class="flex items-center justify-between">
@@ -25,7 +28,8 @@
   import { Icon } from '/@/components/Icon';
   import { useGlobSetting } from '/@/hooks/setting';
   import { useMessage } from '/@/hooks/web/useMessage';
-  import { bindThirdAppAccount, getThirdAccountByUserId } from '/@/views/system/usersetting/UserSetting.api';
+  import { bindThirdAppAccount, vertoBindThirdAppAccount, getThirdAccountByUserId, deleteThirdAccount, vertoGetThirdAccountByUserId, vertoDeleteThirdAccount } from '/@/views/system/usersetting/UserSetting.api';
+  import { Modal } from 'ant-design-vue';
 
   const glob = useGlobSetting();
   const { createMessage } = useMessage();
@@ -60,6 +64,12 @@
     try {
       const res = await bindThirdAppAccount({ thirdUserUuid: uuid, thirdType: unref(thirdType) });
       if (res && res.success) {
+        // 同时调用 Verto 扩展接口，确保 oauth_binding 创建成功
+        try {
+          await vertoBindThirdAppAccount({ thirdUserUuid: uuid, thirdType: unref(thirdType) });
+        } catch (err) {
+          // 忽略扩展接口异常，不影响原有流程
+        }
         await initBindStatus();
         createMessage.success(res.message || '绑定成功');
       } else {
@@ -73,7 +83,8 @@
   }
 
   function onBindGithub() {
-    const url = `${glob.uploadUrl}/sys/thirdLogin/render/${unref(thirdType)}`;
+    // 调用 Verto 专用授权端点，避免与系统内置 /render/{source} 路由冲突
+    const url = `${glob.uploadUrl}/sys/thirdLoginVerto/render/${unref(thirdType)}`;
 
     // 确保只保留一个弹窗与一个监听
     if (unref(windowsIndex)) {
@@ -110,6 +121,36 @@
       windowsIndex.value = null;
     };
     window.addEventListener('message', unref(receiveMessage), false);
+  }
+
+  /**
+   * 解绑 GitHub 账户
+   */
+  function onUnbindGithub() {
+    const data = unref(bindGithubData) || {};
+    if (!data.sysUserId || !data.id) {
+      createMessage.warning('当前未绑定或数据异常');
+      return;
+    }
+    Modal.confirm({
+      title: '解绑 GitHub',
+      content: '确定要解绑当前 GitHub 账户吗？',
+      okText: '确认',
+      cancelText: '取消',
+      async onOk() {
+        try {
+          const res = await deleteThirdAccount({ sysUserId: data.sysUserId, id: data.id });
+          if (res && res.success) {
+            await initBindStatus();
+            createMessage.success(res.message || '解绑成功');
+          } else {
+            createMessage.warning(res?.message || '解绑失败');
+          }
+        } catch (e: any) {
+          createMessage.error(e?.message || '解绑异常');
+        }
+      },
+    });
   }
 
   onMounted(() => {

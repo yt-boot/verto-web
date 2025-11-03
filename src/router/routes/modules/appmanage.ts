@@ -32,26 +32,6 @@ const appmanage: AppRouteModule = {
         currentActiveMenu: '/appmanage/list',
       },
     },
-    {
-      path: 'config',
-      name: 'ConfigManage',
-      component: () => import('/@/views/appmanage/config/ConfigList.vue'),
-      meta: {
-        title: '配置中心',
-        hideMenu: false,
-      },
-    },
-    {
-      path: 'config/detail/:id',
-      name: 'ConfigDetail',
-      component: () => import('/@/views/appmanage/config/ConfigDetail.vue'),
-      meta: {
-        title: '配置详情',
-        hideMenu: true,
-        hideTab: false,
-        currentActiveMenu: '/appmanage/config',
-      },
-    },
   ],
 };
 
