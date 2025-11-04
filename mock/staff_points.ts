@@ -1,8 +1,8 @@
 import { MockMethod } from 'vite-plugin-mock';
 import { resultPageSuccess, resultSuccess } from './_util';
 
-// ÕâÀïµ¥¶ÀÌá¹© /verto-backend Ç°×ºµÄÈËÔ±Óë»ı·ÖÏà¹Ø Mock ½Ó¿Ú£¬
-// ÒÔ±ãÇ°¶ËÊ¹ÓÃµÄ API£¨/verto-backend/...£©¿ÉÒÔÖ±½ÓÃüÖĞ Mock¡£
+// ï¿½ï¿½ï¿½ïµ¥ï¿½ï¿½ï¿½á¹© /verto-backend Ç°×ºï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Mock ï¿½Ó¿Ú£ï¿½
+// ï¿½Ô±ï¿½Ç°ï¿½ï¿½Ê¹ï¿½Ãµï¿½ APIï¿½ï¿½/verto-backend/...ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Mockï¿½ï¿½
 
 type StaffItem = {
   id: string;
@@ -19,23 +19,23 @@ type StaffItem = {
   updateTime?: string;
   createBy: string;
   updateBy?: string;
-  // ÁĞ±íÕ¹Ê¾Ê¹ÓÃ
+  // ï¿½Ğ±ï¿½Õ¹Ê¾Ê¹ï¿½ï¿½
   points?: number;
 };
 
-// È¡ mock/staff.ts ÖĞÇ°¼¸ÌõÈËÔ±Ê¾Àı£¬×ã¹»ÓÃÓÚÒ³ÃæÕ¹Ê¾ÓëÏêÇéÑİÊ¾
+// È¡ mock/staff.ts ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô±Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½ã¹»ï¿½ï¿½ï¿½ï¿½Ò³ï¿½ï¿½Õ¹Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾
 const staffList: StaffItem[] = [
   {
     id: '1',
-    name: 'ÕÅÈı',
+    name: 'å¼ ä¸‰',
     employeeNo: 'EMP001',
     email: 'zhangsan@company.com',
     phone: '13800138001',
     hireDate: '2023-01-15',
-    workLocation: 'A×ù3Â¥301¹¤Î»',
+    workLocation: 'Aåº§3æ¥¼301å·¥ä½',
     skills: ['Java', 'Spring Boot', 'MySQL', 'Vue.js'],
     status: 1,
-    remark: '×ÊÉîºó¶Ë¿ª·¢¹¤³ÌÊ¦£¬¸ºÔğºËĞÄÒµÎñÏµÍ³¿ª·¢',
+    remark: 'èµ„æ·±åç«¯å¼€å‘å·¥ç¨‹å¸ˆï¼Œè´Ÿè´£æ ¸å¿ƒä¸šåŠ¡ç³»ç»Ÿå¼€å‘',
     createTime: '2023-01-15 09:00:00',
     updateTime: '2024-01-20 14:30:00',
     createBy: 'admin',
@@ -43,15 +43,15 @@ const staffList: StaffItem[] = [
   },
   {
     id: '2',
-    name: 'ÀîËÄ',
+    name: 'æå››',
     employeeNo: 'EMP002',
     email: 'lisi@company.com',
     phone: '13800138002',
     hireDate: '2023-02-20',
-    workLocation: 'A×ù3Â¥302¹¤Î»',
-    skills: ['JavaScript', 'Vue.js', 'React', 'Node.js', 'UIÉè¼Æ'],
+    workLocation: 'Aåº§3æ¥¼302å·¥ä½',
+    skills: ['JavaScript', 'Vue.js', 'React', 'Node.js', 'UIè®¾è®¡'],
     status: 1,
-    remark: 'Ç°¶Ë¿ª·¢¹¤³ÌÊ¦£¬ÉÃ³¤ÏÖ´úÇ°¶Ë¿ò¼ÜºÍÓÃ»§ÌåÑéÉè¼Æ',
+    remark: 'å‰ç«¯å¼€å‘å·¥ç¨‹å¸ˆï¼Œæ“…é•¿ç°ä»£å‰ç«¯æ¡†æ¶å’Œç”¨æˆ·ä½“éªŒè®¾è®¡',
     createTime: '2023-02-20 10:15:00',
     updateTime: '2024-01-18 16:45:00',
     createBy: 'admin',
@@ -59,15 +59,15 @@ const staffList: StaffItem[] = [
   },
   {
     id: '3',
-    name: 'ÍõÎå',
+    name: 'ç‹äº”',
     employeeNo: 'EMP003',
     email: 'wangwu@company.com',
     phone: '13800138003',
     hireDate: '2023-03-10',
-    workLocation: 'B×ù2Â¥201¹¤Î»',
-    skills: ['Python', 'Django', 'PostgreSQL', 'Êı¾İ·ÖÎö', 'Docker'],
+    workLocation: 'Båº§2æ¥¼201å·¥ä½',
+    skills: ['Python', 'Django', 'PostgreSQL', 'æ•°æ®åˆ†æ', 'Docker'],
     status: 1,
-    remark: 'Python¿ª·¢¹¤³ÌÊ¦£¬×¨×¢ÓÚÊı¾İ´¦ÀíºÍ·ÖÎöÏµÍ³',
+    remark: 'Pythonå¼€å‘å·¥ç¨‹å¸ˆï¼Œä¸“æ³¨äºæ•°æ®å¤„ç†å’Œåˆ†æç³»ç»Ÿ',
     createTime: '2023-03-10 14:20:00',
     updateTime: '2024-01-15 11:30:00',
     createBy: 'admin',
@@ -75,15 +75,15 @@ const staffList: StaffItem[] = [
   },
   {
     id: '4',
-    name: 'ÕÔÁù',
+    name: 'èµµå…­',
     employeeNo: 'EMP004',
     email: 'zhaoliu@company.com',
     phone: '13800138004',
     hireDate: '2023-04-05',
-    workLocation: 'A×ù4Â¥401¹¤Î»',
-    skills: ['ÏîÄ¿¹ÜÀí', 'Scrum', 'Jira', 'ĞèÇó·ÖÎö'],
+    workLocation: 'Aåº§4æ¥¼401å·¥ä½',
+    skills: ['é¡¹ç›®ç®¡ç†', 'Scrum', 'Jira', 'éœ€æ±‚åˆ†æ'],
     status: 1,
-    remark: 'ÏîÄ¿¾­Àí£¬¸ºÔğ¶à¸öÖØÒªÏîÄ¿µÄ¹æ»®ºÍÖ´ĞĞ',
+    remark: 'é¡¹ç›®ç»ç†ï¼Œè´Ÿè´£å¤šä¸ªé‡è¦é¡¹ç›®çš„è§„åˆ’å’Œæ‰§è¡Œ',
     createTime: '2023-04-05 08:45:00',
     updateTime: '2024-01-22 09:15:00',
     createBy: 'admin',
@@ -91,15 +91,15 @@ const staffList: StaffItem[] = [
   },
   {
     id: '5',
-    name: 'ËïÆß',
+    name: 'å­™ä¸ƒ',
     employeeNo: 'EMP005',
     email: 'sunqi@company.com',
     phone: '13800138005',
     hireDate: '2023-05-12',
-    workLocation: 'B×ù3Â¥305¹¤Î»',
-    skills: ['UIÉè¼Æ', '²úÆ·Éè¼Æ', 'Figma', 'Sketch', 'Photoshop'],
+    workLocation: 'Båº§3æ¥¼305å·¥ä½',
+    skills: ['UIè®¾è®¡', 'äº§å“è®¾è®¡', 'Figma', 'Sketch', 'Photoshop'],
     status: 1,
-    remark: 'UI/UXÉè¼ÆÊ¦£¬¸ºÔğ²úÆ·½çÃæÉè¼ÆºÍÓÃ»§ÌåÑéÓÅ»¯',
+    remark: 'UI/UXè®¾è®¡å¸ˆï¼Œè´Ÿè´£äº§å“ç•Œé¢è®¾è®¡å’Œç”¨æˆ·ä½“éªŒä¼˜åŒ–',
     createTime: '2023-05-12 13:30:00',
     updateTime: '2024-01-19 15:20:00',
     createBy: 'admin',
@@ -107,15 +107,15 @@ const staffList: StaffItem[] = [
   },
   {
     id: '6',
-    name: 'ÖÜ°Ë',
+    name: 'å‘¨å…«',
     employeeNo: 'EMP006',
     email: 'zhouba@company.com',
     phone: '13800138006',
     hireDate: '2023-06-18',
-    workLocation: 'A×ù2Â¥205¹¤Î»',
-    skills: ['²âÊÔ', 'Selenium', 'JMeter', '×Ô¶¯»¯²âÊÔ', 'Bug¹ÜÀí'],
+    workLocation: 'Aåº§2æ¥¼205å·¥ä½',
+    skills: ['æµ‹è¯•', 'Selenium', 'JMeter', 'è‡ªåŠ¨åŒ–æµ‹è¯•', 'Bugç®¡ç†'],
     status: 1,
-    remark: '²âÊÔ¹¤³ÌÊ¦£¬¸ºÔğÏµÍ³¹¦ÄÜ²âÊÔºÍ×Ô¶¯»¯²âÊÔ¿ò¼Ü´î½¨',
+    remark: 'æµ‹è¯•å·¥ç¨‹å¸ˆï¼Œè´Ÿè´£ç³»ç»ŸåŠŸèƒ½æµ‹è¯•å’Œè‡ªåŠ¨åŒ–æµ‹è¯•æ¡†æ¶æ­å»º',
     createTime: '2023-06-18 10:00:00',
     updateTime: '2024-01-16 12:40:00',
     createBy: 'admin',
@@ -123,75 +123,75 @@ const staffList: StaffItem[] = [
   },
 ];
 
-// »ı·ÖÈÕÖ¾ÀàĞÍ¶¨Òå
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾ï¿½ï¿½ï¿½Í¶ï¿½ï¿½ï¿½
 type PointsLog = {
   id: string;
   staffId: string;
-  eventType: string; // ÊÂ¼şÀàĞÍ£¨Õ¹Ê¾ÓÃÖĞÎÄ£©
+  eventType: string; // ï¿½Â¼ï¿½ï¿½ï¿½ï¿½Í£ï¿½Õ¹Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½Ä£ï¿½
   sourceType: 'APP' | 'PROJECT' | 'COMPONENT' | 'OTHER';
   sourceId?: string;
   sourceName: string;
-  delta: number; // »ı·Ö±ä¶¯£¬Ö§³Ö¸ºÊı
+  delta: number; // ï¿½ï¿½ï¿½Ö±ä¶¯ï¿½ï¿½Ö§ï¿½Ö¸ï¿½ï¿½ï¿½
   remark?: string;
   createTime: string;
 };
 
-// Îª²¿·ÖÈËÔ±×¼±¸»ı·ÖÈÕÖ¾Ê¾ÀıÊı¾İ£¨ÆäÓàÈËÔ±Ä¬ÈÏ0·Ö¡¢ÎŞÁ÷Ë®£©
+// Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô±×¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½İ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô±Ä¬ï¿½ï¿½0ï¿½Ö¡ï¿½ï¿½ï¿½ï¿½ï¿½Ë®ï¿½ï¿½
 const pointsLogsByStaffId: Record<string, PointsLog[]> = {
   '1': [
     {
       id: 'log-1-001',
       staffId: '1',
-      eventType: 'Ó¦ÓÃÎ¬»¤ÈËÄ¬ÈÏ¼Ó·Ö',
+      eventType: 'åº”ç”¨ç»´æŠ¤é»˜è®¤åŠ åˆ†',
       sourceType: 'APP',
       sourceId: 'app-uc',
-      sourceName: 'ÓÃ»§ÖĞĞÄ',
+      sourceName: 'ç”¨æˆ·ä¸­å¿ƒ',
       delta: 1,
-      remark: '³ÉÎªÓ¦ÓÃÎ¬»¤ÈËÄ¬ÈÏ+1',
+      remark: 'ä½œä¸ºåº”ç”¨ç»´æŠ¤é»˜è®¤+1',
       createTime: '2024-02-01 09:00:00',
     },
     {
       id: 'log-1-002',
       staffId: '1',
-      eventType: 'ÏîÄ¿¿ª·¢»ı·Ö',
+      eventType: 'é¡¹ç›®è´¡çŒ®',
       sourceType: 'PROJECT',
       sourceId: 'prj-pay-refactor',
-      sourceName: 'Ö§¸¶ÏµÍ³ÖØ¹¹',
+      sourceName: 'æ”¯ä»˜ç³»ç»Ÿé‡æ„',
       delta: 1,
-      remark: '²ÎÓëÏîÄ¿¿ª·¢£¬¿ª·¢ÈËÔ±+1',
+      remark: 'å‚ä¸é¡¹ç›®è´¡çŒ®ï¼Œå›¢é˜Ÿæˆå‘˜+1',
       createTime: '2024-02-15 10:30:00',
     },
     {
       id: 'log-1-003',
       staffId: '1',
-      eventType: '×é¼şÎ¬»¤ÈËÄ¬ÈÏ¼Ó·Ö',
+      eventType: 'ç»„ä»¶ç»´æŠ¤é»˜è®¤åŠ åˆ†',
       sourceType: 'COMPONENT',
       sourceId: 'cmp-login',
-      sourceName: 'µÇÂ¼×é¼ş',
+      sourceName: 'ç™»å½•ç»„ä»¶',
       delta: 1,
-      remark: '³ÉÎª×é¼şÎ¬»¤ÈËÄ¬ÈÏ+1',
+      remark: 'ä½œä¸ºç»„ä»¶ç»´æŠ¤é»˜è®¤+1',
       createTime: '2024-03-01 08:20:00',
     },
     {
       id: 'log-1-004',
       staffId: '1',
-      eventType: '×é¼şÊ¹ÓÃ¼Ó·Ö',
+      eventType: 'ç»„ä»¶ä½¿ç”¨åŠ åˆ†',
       sourceType: 'COMPONENT',
       sourceId: 'cmp-login',
-      sourceName: 'µÇÂ¼×é¼ş',
+      sourceName: 'ç™»å½•ç»„ä»¶',
       delta: 1,
-      remark: '×é¼ş±»ÏîÄ¿AÊ¹ÓÃ£¬Î¬»¤ÈË+1',
+      remark: 'è¢«é¡¹ç›®Aä½¿ç”¨ï¼Œç»´æŠ¤åŠ +1',
       createTime: '2024-03-04 14:05:00',
     },
     {
       id: 'log-1-005',
       staffId: '1',
-      eventType: '×é¼şÊ¹ÓÃ¼Ó·Ö',
+      eventType: 'ç»„ä»¶ä½¿ç”¨åŠ åˆ†',
       sourceType: 'COMPONENT',
       sourceId: 'cmp-login',
-      sourceName: 'µÇÂ¼×é¼ş',
+      sourceName: 'ç™»å½•ç»„ä»¶',
       delta: 1,
-      remark: '×é¼ş±»ÏîÄ¿BÊ¹ÓÃ£¬Î¬»¤ÈË+1',
+      remark: 'è¢«é¡¹ç›®Bä½¿ç”¨ï¼Œç»´æŠ¤åŠ +1',
       createTime: '2024-03-10 11:22:00',
     },
   ],
@@ -199,34 +199,34 @@ const pointsLogsByStaffId: Record<string, PointsLog[]> = {
     {
       id: 'log-2-001',
       staffId: '2',
-      eventType: 'ÏîÄ¿¿ª·¢»ı·Ö',
+      eventType: 'é¡¹ç›®è´¡çŒ®',
       sourceType: 'PROJECT',
       sourceId: 'prj-fe-portal',
-      sourceName: 'ÃÅ»§Ç°¶ËÖØ¹¹',
+      sourceName: 'ä¼˜åŒ–å‰ç«¯é‡æ„',
       delta: 1,
-      remark: '²ÎÓëÏîÄ¿¿ª·¢£¬¿ª·¢ÈËÔ±+1',
+      remark: 'å‚ä¸é¡¹ç›®è´¡çŒ®ï¼Œå›¢é˜Ÿæˆå‘˜+1',
       createTime: '2024-02-12 13:10:00',
     },
     {
       id: 'log-2-002',
       staffId: '2',
-      eventType: '×é¼şÎ¬»¤ÈËÄ¬ÈÏ¼Ó·Ö',
+      eventType: 'ç»„ä»¶ç»´æŠ¤é»˜è®¤åŠ åˆ†',
       sourceType: 'COMPONENT',
       sourceId: 'cmp-table',
-      sourceName: '¸ß¼¶±í¸ñ×é¼ş',
+      sourceName: 'é«˜çº§è¡¨æ ¼ç»„ä»¶',
       delta: 1,
-      remark: '³ÉÎª×é¼şÎ¬»¤ÈËÄ¬ÈÏ+1',
+      remark: 'ä½œä¸ºç»„ä»¶ç»´æŠ¤é»˜è®¤+1',
       createTime: '2024-03-02 09:05:00',
     },
     {
       id: 'log-2-003',
       staffId: '2',
-      eventType: '×é¼şÊ¹ÓÃ¼Ó·Ö',
+      eventType: 'ç»„ä»¶ä½¿ç”¨åŠ åˆ†',
       sourceType: 'COMPONENT',
       sourceId: 'cmp-table',
-      sourceName: '¸ß¼¶±í¸ñ×é¼ş',
+      sourceName: 'é«˜çº§è¡¨æ ¼ç»„ä»¶',
       delta: 1,
-      remark: '×é¼ş±»ÃÅ»§ÏîÄ¿Ê¹ÓÃ£¬Î¬»¤ÈË+1',
+      remark: 'åœ¨ä¼˜åŒ–é¡¹ç›®ä¸­ä½¿ç”¨ï¼Œç»´æŠ¤åŠ +1',
       createTime: '2024-03-12 19:40:00',
     },
   ],
@@ -234,23 +234,23 @@ const pointsLogsByStaffId: Record<string, PointsLog[]> = {
     {
       id: 'log-3-001',
       staffId: '3',
-      eventType: 'Ó¦ÓÃÎ¬»¤ÈËÄ¬ÈÏ¼Ó·Ö',
+      eventType: 'åº”ç”¨ç»´æŠ¤é»˜è®¤åŠ åˆ†',
       sourceType: 'APP',
       sourceId: 'app-analytics',
-      sourceName: 'Êı¾İ·ÖÎöÆ½Ì¨',
+      sourceName: 'æ•°æ®åˆ†æå¹³å°',
       delta: 1,
-      remark: '³ÉÎªÓ¦ÓÃÎ¬»¤ÈËÄ¬ÈÏ+1',
+      remark: 'ä½œä¸ºåº”ç”¨ç»´æŠ¤é»˜è®¤+1',
       createTime: '2024-01-28 16:00:00',
     },
     {
       id: 'log-3-002',
       staffId: '3',
-      eventType: 'ÏîÄ¿¿ª·¢»ı·Ö',
+      eventType: 'é¡¹ç›®è´¡çŒ®',
       sourceType: 'PROJECT',
       sourceId: 'prj-data-etl',
-      sourceName: 'Êı¾İETL¹ÜµÀ',
+      sourceName: 'æ•°æ®ETLç®¡é“',
       delta: 1,
-      remark: '²ÎÓëÏîÄ¿¿ª·¢£¬¿ª·¢ÈËÔ±+1',
+      remark: 'å‚ä¸é¡¹ç›®è´¡çŒ®ï¼Œå›¢é˜Ÿæˆå‘˜+1',
       createTime: '2024-02-20 10:00:00',
     },
   ],
@@ -258,12 +258,12 @@ const pointsLogsByStaffId: Record<string, PointsLog[]> = {
     {
       id: 'log-6-001',
       staffId: '6',
-      eventType: 'ÏîÄ¿¿ª·¢»ı·Ö',
+      eventType: 'é¡¹ç›®è´¡çŒ®',
       sourceType: 'PROJECT',
       sourceId: 'prj-qa-automation',
-      sourceName: '×Ô¶¯»¯²âÊÔÆ½Ì¨',
+      sourceName: 'è‡ªåŠ¨åŒ–æµ‹è¯•å¹³å°',
       delta: 1,
-      remark: '²ÎÓëÏîÄ¿¿ª·¢£¬¿ª·¢ÈËÔ±+1',
+      remark: 'å‚ä¸é¡¹ç›®è´¡çŒ®ï¼Œå›¢é˜Ÿæˆå‘˜+1',
       createTime: '2024-02-18 09:45:00',
     },
   ],
@@ -278,7 +278,7 @@ function getTotalPoints(staffId: string): number {
 }
 
 export default [
-  // ÈËÔ±ÁĞ±í£¨´ø»ı·Ö£©
+  // ï¿½ï¿½Ô±ï¿½Ğ±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö£ï¿½
   {
     url: '/verto-backend/staff/list',
     method: 'get',
@@ -308,7 +308,7 @@ export default [
     },
   },
 
-  // ÈËÔ±ÏêÇé
+  // ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ï¿½
   {
     url: '/verto-backend/staff/queryById',
     method: 'get',
@@ -319,7 +319,7 @@ export default [
     },
   },
 
-  // »ı·Ö×ÜÀÀ
+  // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
   {
     url: '/verto-backend/staff/points/summary',
     method: 'get',
@@ -330,7 +330,7 @@ export default [
     },
   },
 
-  // »ı·ÖÁ÷Ë®£¨·ÖÒ³£©
+  // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë®ï¿½ï¿½ï¿½ï¿½Ò³ï¿½ï¿½
   {
     url: '/verto-backend/staff/points/logs',
     method: 'get',
@@ -338,28 +338,78 @@ export default [
       const { staffId, pageNo = 1, pageSize = 10, eventType, sourceType } = query;
       let logs = getPointsLogs(String(staffId));
 
-      // ÊÂ¼şÀàĞÍ¹ıÂË
+      // ï¿½Â¼ï¿½ï¿½ï¿½ï¿½Í¹ï¿½ï¿½ï¿½
       if (eventType) {
         logs = logs.filter((l) => String(l.eventType) === String(eventType));
       }
-      // À´Ô´ÀàĞÍ¹ıÂË
+      // ï¿½ï¿½Ô´ï¿½ï¿½ï¿½Í¹ï¿½ï¿½ï¿½
       if (sourceType) {
         logs = logs.filter((l) => String(l.sourceType) === String(sourceType));
       }
 
-      // Ê±¼äµ¹Ğò
+      // Ê±ï¿½äµ¹ï¿½ï¿½
       logs.sort((a, b) => (a.createTime < b.createTime ? 1 : -1));
 
       return resultPageSuccess(Number(pageNo), Number(pageSize), logs);
     },
   },
 
-  // ÊÖ¶¯µ÷Õû»ı·Ö£¨Áªµ÷/ÑİÊ¾ÓÃ£©
+  // ï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë®ï¿½ï¿½ï¿½ï¿½Ò³ï¿½ï¿½ï¼ˆÖ§ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ staffIdã€eventTypeã€sourceTypeï¿½ï¿½ï¿½Ø¼ï¿½ï¿½ï¿½ keywordï¼‰
+  {
+    url: '/verto-backend/staff/points/logs/all',
+    method: 'get',
+    response: ({ query }) => {
+      const { staffId, pageNo = 1, pageSize = 10, eventType, sourceType, keyword } = query;
+
+      // ï¿½ï¿½Ï²ï¿½ï¿½ï¿½ï¿½ï¿½Ô±ï¿½Ä»ï¿½ï¿½ï¿½Ë®
+      let allLogs: (PointsLog & { staffName?: string })[] = Object.keys(pointsLogsByStaffId).flatMap((sid) => {
+        const logs = pointsLogsByStaffId[sid] || [];
+        const staffName = (staffList.find((s) => s.id === sid) || { name: sid as any }).name as string;
+        return logs.map((l) => ({ ...l, staffName }));
+      });
+
+      // ï¿½ï¿½ï¿½ï¿½Ô± ç­›é€‰
+      if (staffId) {
+        const idStr = String(staffId);
+        allLogs = allLogs.filter((l) => String(l.staffId) === idStr);
+      }
+
+      // ï¿½Â¼ï¿½ï¿½ï¿½ï¿½Í¹ï¿½ï¿½ï¿½
+      if (eventType) {
+        const et = String(eventType);
+        allLogs = allLogs.filter((l) => String(l.eventType) === et);
+      }
+
+      // ï¿½ï¿½Ô´ï¿½ï¿½ï¿½Í¹ï¿½ï¿½ï¿½
+      if (sourceType) {
+        const st = String(sourceType);
+        allLogs = allLogs.filter((l) => String(l.sourceType) === st);
+      }
+
+      // ï¿½Ø¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¼ˆï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½Í£ï¿½ï¿½Í¡ï¿½ï¿½ï¿½×¢ï¿½ï¿½ï¿½ï¿½Æ¥ï¿½ï¿½ï¼‰
+      if (keyword) {
+        const kw = String(keyword).toLowerCase();
+        allLogs = allLogs.filter((l) =>
+          String(l.sourceName || '').toLowerCase().includes(kw) ||
+          String(l.eventType || '').toLowerCase().includes(kw) ||
+          String(l.remark || '').toLowerCase().includes(kw) ||
+          String(l.staffName || '').toLowerCase().includes(kw)
+        );
+      }
+
+      // Ê±ï¿½äµ¹ï¿½ï¿½
+      allLogs.sort((a, b) => (a.createTime < b.createTime ? 1 : -1));
+
+      return resultPageSuccess(Number(pageNo), Number(pageSize), allLogs);
+    },
+  },
+
+  // ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö£ï¿½ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½Ê¾ï¿½Ã£ï¿½
   {
     url: '/verto-backend/staff/points/adjust',
     method: 'post',
     response: ({ body }) => {
-      const { staffId, delta = 0, remark = 'ÊÖ¶¯µ÷Õû', sourceType = 'OTHER', eventType = 'ÊÖ¶¯µ÷Õû', sourceId, sourceName } = body || {};
+      const { staffId, delta = 0, remark = 'æ‰‹åŠ¨è°ƒæ•´', sourceType = 'OTHER', eventType = 'æ‰‹åŠ¨è°ƒæ•´', sourceId, sourceName } = body || {};
       const id = String(staffId);
       const newLog: PointsLog = {
         id: `log-${id}-${Date.now()}`,
@@ -367,7 +417,174 @@ export default [
         eventType: String(eventType),
         sourceType: String(sourceType).toUpperCase() as any,
         sourceId,
-        sourceName: sourceName || 'ÊÖ¶¯µ÷Õû',
+        sourceName: sourceName || 'æ‰‹åŠ¨è°ƒæ•´',
+        delta: Number(delta),
+        remark,
+        createTime: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      };
+      pointsLogsByStaffId[id] = pointsLogsByStaffId[id] || [];
+      pointsLogsByStaffId[id].push(newLog);
+      return resultSuccess({ success: true });
+    },
+  },
+  // å…¼å®¹ä¸åŒçš„ URL å‰ç¼€ï¼š/jeecgboot å’Œ æ— å‰ç¼€ï¼ˆå¼€å‘ç¯å¢ƒå¯èƒ½é…ç½®ä¸åŒï¼‰
+  // æ³¨æ„ï¼šäººå‘˜åˆ—è¡¨/è¯¦æƒ…ç­‰å·²ç”± mock/staff.ts æä¾› /jeecgboot å‰ç¼€ï¼Œè¿™é‡Œä»…è¡¥å……ç§¯åˆ†ç›¸å…³æ¥å£çš„åˆ«å
+  {
+    url: '/jeecgboot/staff/points/summary',
+    method: 'get',
+    response: ({ query }) => {
+      const { staffId } = query;
+      const totalPoints = getTotalPoints(String(staffId));
+      return resultSuccess({ totalPoints });
+    },
+  },
+  {
+    url: '/jeecgboot/staff/points/logs',
+    method: 'get',
+    response: ({ query }) => {
+      const { staffId, pageNo = 1, pageSize = 10, eventType, sourceType } = query;
+      let logs = getPointsLogs(String(staffId));
+      if (eventType) {
+        logs = logs.filter((l) => String(l.eventType) === String(eventType));
+      }
+      if (sourceType) {
+        logs = logs.filter((l) => String(l.sourceType) === String(sourceType));
+      }
+      logs.sort((a, b) => (a.createTime < b.createTime ? 1 : -1));
+      return resultPageSuccess(Number(pageNo), Number(pageSize), logs);
+    },
+  },
+  {
+    url: '/jeecgboot/staff/points/logs/all',
+    method: 'get',
+    response: ({ query }) => {
+      const { staffId, pageNo = 1, pageSize = 10, eventType, sourceType, keyword } = query;
+      let allLogs: (PointsLog & { staffName?: string })[] = Object.keys(pointsLogsByStaffId).flatMap((sid) => {
+        const logs = pointsLogsByStaffId[sid] || [];
+        const staffName = (staffList.find((s) => s.id === sid) || { name: sid as any }).name as string;
+        return logs.map((l) => ({ ...l, staffName }));
+      });
+      if (staffId) {
+        const idStr = String(staffId);
+        allLogs = allLogs.filter((l) => String(l.staffId) === idStr);
+      }
+      if (eventType) {
+        const et = String(eventType);
+        allLogs = allLogs.filter((l) => String(l.eventType) === et);
+      }
+      if (sourceType) {
+        const st = String(sourceType);
+        allLogs = allLogs.filter((l) => String(l.sourceType) === st);
+      }
+      if (keyword) {
+        const kw = String(keyword).toLowerCase();
+        allLogs = allLogs.filter((l) =>
+          String(l.sourceName || '').toLowerCase().includes(kw) ||
+          String(l.eventType || '').toLowerCase().includes(kw) ||
+          String(l.remark || '').toLowerCase().includes(kw) ||
+          String(l.staffName || '').toLowerCase().includes(kw)
+        );
+      }
+      allLogs.sort((a, b) => (a.createTime < b.createTime ? 1 : -1));
+      return resultPageSuccess(Number(pageNo), Number(pageSize), allLogs);
+    },
+  },
+  {
+    url: '/jeecgboot/staff/points/adjust',
+    method: 'post',
+    response: ({ body }) => {
+      const { staffId, delta = 0, remark = 'æ‰‹åŠ¨è°ƒæ•´', sourceType = 'OTHER', eventType = 'æ‰‹åŠ¨è°ƒæ•´', sourceId, sourceName } = body || {};
+      const id = String(staffId);
+      const newLog: PointsLog = {
+        id: `log-${id}-${Date.now()}`,
+        staffId: id,
+        eventType: String(eventType),
+        sourceType: String(sourceType).toUpperCase() as any,
+        sourceId,
+        sourceName: sourceName || 'æ‰‹åŠ¨è°ƒæ•´',
+        delta: Number(delta),
+        remark,
+        createTime: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      };
+      pointsLogsByStaffId[id] = pointsLogsByStaffId[id] || [];
+      pointsLogsByStaffId[id].push(newLog);
+      return resultSuccess({ success: true });
+    },
+  },
+  // æ— å‰ç¼€åˆ«åï¼ˆå½“ VITE_GLOB_API_URL_PREFIX ä¸ºç©ºæ—¶ï¼‰
+  {
+    url: '/staff/points/summary',
+    method: 'get',
+    response: ({ query }) => {
+      const { staffId } = query;
+      const totalPoints = getTotalPoints(String(staffId));
+      return resultSuccess({ totalPoints });
+    },
+  },
+  {
+    url: '/staff/points/logs',
+    method: 'get',
+    response: ({ query }) => {
+      const { staffId, pageNo = 1, pageSize = 10, eventType, sourceType } = query;
+      let logs = getPointsLogs(String(staffId));
+      if (eventType) {
+        logs = logs.filter((l) => String(l.eventType) === String(eventType));
+      }
+      if (sourceType) {
+        logs = logs.filter((l) => String(l.sourceType) === String(sourceType));
+      }
+      logs.sort((a, b) => (a.createTime < b.createTime ? 1 : -1));
+      return resultPageSuccess(Number(pageNo), Number(pageSize), logs);
+    },
+  },
+  {
+    url: '/staff/points/logs/all',
+    method: 'get',
+    response: ({ query }) => {
+      const { staffId, pageNo = 1, pageSize = 10, eventType, sourceType, keyword } = query;
+      let allLogs: (PointsLog & { staffName?: string })[] = Object.keys(pointsLogsByStaffId).flatMap((sid) => {
+        const logs = pointsLogsByStaffId[sid] || [];
+        const staffName = (staffList.find((s) => s.id === sid) || { name: sid as any }).name as string;
+        return logs.map((l) => ({ ...l, staffName }));
+      });
+      if (staffId) {
+        const idStr = String(staffId);
+        allLogs = allLogs.filter((l) => String(l.staffId) === idStr);
+      }
+      if (eventType) {
+        const et = String(eventType);
+        allLogs = allLogs.filter((l) => String(l.eventType) === et);
+      }
+      if (sourceType) {
+        const st = String(sourceType);
+        allLogs = allLogs.filter((l) => String(l.sourceType) === st);
+      }
+      if (keyword) {
+        const kw = String(keyword).toLowerCase();
+        allLogs = allLogs.filter((l) =>
+          String(l.sourceName || '').toLowerCase().includes(kw) ||
+          String(l.eventType || '').toLowerCase().includes(kw) ||
+          String(l.remark || '').toLowerCase().includes(kw) ||
+          String(l.staffName || '').toLowerCase().includes(kw)
+        );
+      }
+      allLogs.sort((a, b) => (a.createTime < b.createTime ? 1 : -1));
+      return resultPageSuccess(Number(pageNo), Number(pageSize), allLogs);
+    },
+  },
+  {
+    url: '/staff/points/adjust',
+    method: 'post',
+    response: ({ body }) => {
+      const { staffId, delta = 0, remark = 'æ‰‹åŠ¨è°ƒæ•´', sourceType = 'OTHER', eventType = 'æ‰‹åŠ¨è°ƒæ•´', sourceId, sourceName } = body || {};
+      const id = String(staffId);
+      const newLog: PointsLog = {
+        id: `log-${id}-${Date.now()}`,
+        staffId: id,
+        eventType: String(eventType),
+        sourceType: String(sourceType).toUpperCase() as any,
+        sourceId,
+        sourceName: sourceName || 'æ‰‹åŠ¨è°ƒæ•´',
         delta: Number(delta),
         remark,
         createTime: new Date().toISOString().slice(0, 19).replace('T', ' '),

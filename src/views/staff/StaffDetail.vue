@@ -63,7 +63,7 @@
             <a-statistic title="总积分" :value="pointsSummary.totalPoints || 0" />
           </div>
           <a-table
-            :dataSource="pointsLogs"
+            :data-source="pointsLogs"
             :columns="pointsColumns"
             :loading="pointsLoading"
             size="small"
@@ -84,7 +84,7 @@
           :destroy-on-close="true"
         >
           <a-table
-            :dataSource="pointsLogs"
+            :data-source="pointsLogs"
             :columns="pointsColumns"
             :loading="pointsLoading"
             size="small"
@@ -156,6 +156,7 @@
       const summary = await getStaffPointsSummary(id);
       pointsSummary.value = summary || { totalPoints: 0 };
       const logsRes = await getStaffPointsLogs(id);
+      console.log(logsRes?.records,'logsRes?.records')
       pointsLogs.value = Array.isArray(logsRes?.records) ? logsRes.records : (logsRes || []);
     } catch (error) {
       createMessage.error('获取积分信息失败');

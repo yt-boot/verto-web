@@ -10,6 +10,7 @@ const componentList = [
     name: 'BasicTable',
     type: 'display',
     version: '1.0.0',
+    path: 'src/components/BasicTable/index.vue',
     code: `<template>
   <div class="basic-table">
     <a-table 
@@ -48,6 +49,7 @@ const handleTableChange = (pagination, filters, sorter) => {
     name: 'FormBuilder',
     type: 'form',
     version: '2.1.0',
+    path: 'src/components/FormBuilder/index.vue',
     code: `<template>
   <div class="form-builder">
     <a-form 
@@ -103,6 +105,7 @@ const handleSubmit = (values) => {
     name: 'ChartWidget',
     type: 'display',
     version: '1.5.0',
+    path: 'src/components/ChartWidget/index.vue',
     code: `<template>
   <div class="chart-widget">
     <div ref="chartRef" :style="{ width: '100%', height: height + 'px' }"></div>
@@ -147,6 +150,7 @@ watch(() => props.option, (newOption) => {
     name: 'LayoutGrid',
     type: 'layout',
     version: '1.2.0',
+    path: 'src/layouts/LayoutGrid/index.vue',
     code: `<template>
   <div class="layout-grid" :class="gridClass">
     <div 
@@ -206,6 +210,7 @@ const getItemStyle = (item) => ({
     name: 'DataFilter',
     type: 'business',
     version: '1.3.0',
+    path: 'src/business/DataFilter/index.vue',
     code: `<template>
   <div class="data-filter">
     <a-card title="数据筛选">
@@ -277,9 +282,11 @@ const handleReset = () => {
 const templateList = [
   {
     id: '1',
+    templateCode: 'USER_MANAGEMENT_PAGE',
     name: '用户管理页面',
     type: 'page',
     version: '1.0.0',
+    gitUrl: 'https://github.com/company/user-management-template.git',
     content: `<template>
   <div class="user-management">
     <div class="page-header">
@@ -403,9 +410,11 @@ onMounted(() => {
   },
   {
     id: '2',
+    templateCode: 'DASHBOARD_PAGE',
     name: '数据看板模板',
     type: 'page',
     version: '2.0.0',
+    gitUrl: 'https://github.com/company/dashboard-template.git',
     content: `<template>
   <div class="dashboard">
     <div class="dashboard-header">
@@ -509,9 +518,11 @@ onMounted(() => {
   },
   {
     id: '3',
+    templateCode: 'FORM_PAGE',
     name: '表单页面模板',
     type: 'page',
     version: '1.1.0',
+    gitUrl: 'https://github.com/company/form-page-template.git',
     content: `<template>
   <div class="form-page">
     <a-card title="表单页面">
@@ -610,9 +621,11 @@ const handleReset = () => {
   },
   {
     id: '4',
+    templateCode: 'CARD_LAYOUT_PAGE',
     name: '卡片布局模板',
     type: 'layout',
     version: '1.0.0',
+    gitUrl: 'https://github.com/company/card-layout-template.git',
     content: `<template>
   <div class="card-layout">
     <a-row :gutter="[16, 16]">
@@ -782,19 +795,21 @@ export default [
     url: '/jeecgboot/material/component/list',
     method: 'get',
     response: ({ query }) => {
-      const { pageNo = 1, pageSize = 10, name, type, status } = query;
+      const { pageNo = 1, pageSize = 10, name, type, status, componentName, componentType } = query;
       let filteredList = [...componentList];
 
       // 根据组件名称过滤
-      if (name) {
-        filteredList = filteredList.filter(item => 
-          item.name.toLowerCase().includes(name.toLowerCase())
+      const searchName = componentName || name;
+      if (searchName) {
+        filteredList = filteredList.filter(item =>
+          item.name.toLowerCase().includes(String(searchName).toLowerCase())
         );
       }
 
       // 根据组件类型过滤
-      if (type) {
-        filteredList = filteredList.filter(item => item.type === type);
+      const searchType = componentType || type;
+      if (searchType) {
+        filteredList = filteredList.filter(item => item.type === searchType);
       }
 
       // 根据状态过滤
@@ -802,12 +817,26 @@ export default [
         filteredList = filteredList.filter(item => item.status === status);
       }
 
-      // 分页处理
-      const start = (pageNo - 1) * pageSize;
-      const end = start + pageSize;
-      const records = filteredList.slice(start, end);
+      // 将数据映射为前端所需字段
+      const mappedList = filteredList.map((item) => ({
+        id: item.id,
+        componentName: item.name,
+        componentType: item.type,
+        version: item.version,
+        description: item.description,
+        status: item.status,
+        // 新增：组件路径
+        componentPath: item.path || `src/components/${item.name}/index.vue`,
+        // 兼容字段：默认分发方式与技术栈
+        distributionType: item.distributionType || 'npm',
+        techStack: item.techStack || 'vue3',
+        relatedProject: item.relatedProject,
+        projectTag: item.projectTag,
+        createTime: item.createTime,
+        updateTime: item.updateTime,
+      }));
 
-      return resultPageSuccess(pageNo, pageSize, filteredList);
+      return resultPageSuccess(pageNo, pageSize, mappedList);
     },
   },
 
@@ -850,15 +879,26 @@ export default [
     url: '/jeecgboot/material/component/add',
     method: 'post',
     response: ({ body }) => {
-      const newComponent = {
-        ...body,
+      // 将前端传入的字段转换为内部存储结构
+      const mapped = {
         id: String(componentList.length + 1),
+        name: body.componentName,
+        type: body.componentType,
+        version: body.version,
+        description: body.description,
+        status: body.status || '1',
+        path: body.componentPath,
+        // 额外兼容字段保留在对象上，便于后续扩展
+        distributionType: body.distributionType,
+        techStack: body.techStack,
+        relatedProject: body.relatedProject,
+        projectTag: body.projectTag,
         createTime: new Date().toLocaleString(),
         updateTime: new Date().toLocaleString(),
         createBy: 'admin',
         updateBy: 'admin',
-      };
-      componentList.push(newComponent);
+      } as any;
+      componentList.push(mapped);
       return resultSuccess('新增成功');
     },
   },
@@ -873,11 +913,24 @@ export default [
       const { id } = body;
       const index = componentList.findIndex(item => item.id === id);
       if (index !== -1) {
-        componentList[index] = { 
-          ...componentList[index], 
-          ...body, 
-          updateTime: new Date().toLocaleString() 
-        };
+        // 映射前端字段到内部存储结构
+        const prev = componentList[index];
+        const updated = {
+          ...prev,
+          name: body.componentName ?? prev.name,
+          type: body.componentType ?? prev.type,
+          version: body.version ?? prev.version,
+          description: body.description ?? prev.description,
+          status: body.status ?? prev.status,
+          path: body.componentPath ?? prev.path,
+          distributionType: body.distributionType ?? prev.distributionType,
+          techStack: body.techStack ?? prev.techStack,
+          relatedProject: body.relatedProject ?? prev.relatedProject,
+          projectTag: body.projectTag ?? prev.projectTag,
+          updateTime: new Date().toLocaleString(),
+          updateBy: 'admin',
+        } as any;
+        componentList[index] = updated;
       }
       return resultSuccess('编辑成功');
     },
@@ -956,19 +1009,21 @@ export default [
     url: '/jeecgboot/material/template/list',
     method: 'get',
     response: ({ query }) => {
-      const { pageNo = 1, pageSize = 10, name, type, status } = query;
+      const { pageNo = 1, pageSize = 10, name, templateName, type, templateType, status } = query;
       let filteredList = [...templateList];
 
       // 根据模板名称过滤
-      if (name) {
+      const searchName = templateName ?? name;
+      if (searchName) {
         filteredList = filteredList.filter(item => 
-          item.name.toLowerCase().includes(name.toLowerCase())
+          item.name.toLowerCase().includes(String(searchName).toLowerCase())
         );
       }
 
       // 根据模板类型过滤
-      if (type) {
-        filteredList = filteredList.filter(item => item.type === type);
+      const searchType = templateType ?? type;
+      if (searchType) {
+        filteredList = filteredList.filter(item => item.type === searchType);
       }
 
       // 根据状态过滤
@@ -976,12 +1031,29 @@ export default [
         filteredList = filteredList.filter(item => item.status === status);
       }
 
+      // 字段映射以适配前端columns显示
+      const mappedList = filteredList.map(item => ({
+        id: item.id,
+        templateName: item.name,
+        templateCode: item.templateCode,
+        templateType: item.type,
+        version: item.version,
+        description: item.description,
+        status: item.status,
+        createTime: item.createTime,
+        gitUrl: item.gitUrl,
+        // 保留原始字段以兼容其他使用场景
+        name: item.name,
+        type: item.type,
+        content: item.content,
+      }));
+
       // 分页处理
       const start = (pageNo - 1) * pageSize;
       const end = start + pageSize;
-      const records = filteredList.slice(start, end);
+      const records = mappedList.slice(start, end);
 
-      return resultPageSuccess(pageNo, pageSize, filteredList);
+      return resultPageSuccess(pageNo, pageSize, mappedList);
     },
   },
 
@@ -993,8 +1065,15 @@ export default [
     method: 'post',
     response: ({ body }) => {
       const newTemplate = {
-        ...body,
         id: String(templateList.length + 1),
+        templateCode: body.templateCode,
+        name: body.templateName,
+        type: body.templateType,
+        version: body.version,
+        gitUrl: body.gitUrl,
+        content: body.sourceCode,
+        description: body.description,
+        status: body.status ?? '1',
         createTime: new Date().toLocaleString(),
         updateTime: new Date().toLocaleString(),
         createBy: 'admin',
@@ -1015,10 +1094,20 @@ export default [
       const { id } = body;
       const index = templateList.findIndex(item => item.id === id);
       if (index !== -1) {
-        templateList[index] = { 
-          ...templateList[index], 
-          ...body, 
-          updateTime: new Date().toLocaleString() 
+        const old = templateList[index];
+        templateList[index] = {
+          ...old,
+          templateCode: body.templateCode ?? old.templateCode,
+          name: body.templateName ?? old.name,
+          type: body.templateType ?? old.type,
+          version: body.version ?? old.version,
+          gitUrl: body.gitUrl ?? old.gitUrl,
+          // 编辑不强制更新内容，若传递则更新
+          content: body.sourceCode ?? old.content,
+          description: body.description ?? old.description,
+          status: body.status ?? old.status,
+          updateTime: new Date().toLocaleString(),
+          updateBy: 'admin',
         };
       }
       return resultSuccess('编辑成功');

@@ -15,6 +15,12 @@ export const componentColumns: BasicColumn[] = [
     width: 150,
   },
   {
+    title: '组件路径',
+    align: 'center',
+    dataIndex: 'componentPath',
+    width: 220,
+  },
+  {
     title: '分发方式',
     align: 'center',
     dataIndex: 'distributionType',
@@ -135,6 +141,11 @@ export const templateColumns: BasicColumn[] = [
     title: '版本',
     align: 'center',
     dataIndex: 'version',
+  },
+  {
+    title: 'Git地址',
+    align: 'center',
+    dataIndex: 'gitUrl',
   },
   {
     title: '描述',
@@ -369,16 +380,15 @@ export const componentFormSchema: FormSchema[] = [
     },
   },
   {
-    label: '组件代码',
-    field: 'componentCode',
-    component: 'JCodeEditor',
-    componentProps: {
-      language: 'javascript',
-      height: 300,
-    },
+    label: '组件路径',
+    field: 'componentPath',
+    component: 'Input',
     required: true,
+    componentProps: {
+      placeholder: '请输入组件在项目中的路径，例如：src/components/Button/index.vue 或 packages/ui/Button',
+    },
     dynamicRules: ({ model, schema }) => {
-      return [{ required: true, message: '请输入组件代码!' }];
+      return [{ required: true, message: '请输入组件路径!' }];
     },
   },
   {
@@ -476,6 +486,14 @@ export const templateFormSchema: FormSchema[] = [
     required: true,
     dynamicRules: ({ model, schema }) => {
       return [{ required: true, message: '请输入版本号!' }];
+    },
+  },
+  {
+    label: 'Git地址',
+    field: 'gitUrl',
+    component: 'Input',
+    componentProps: {
+      placeholder: '请输入Git仓库地址，如：https://github.com/xx/yy.git',
     },
   },
   {

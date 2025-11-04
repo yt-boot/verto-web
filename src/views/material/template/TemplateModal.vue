@@ -39,6 +39,11 @@
       setFieldsValue({
         ...data.record,
       });
+      // 编辑模式隐藏“模板内容”字段
+      updateSchema({ field: 'sourceCode', show: false });
+    } else {
+      // 新增模式显示“模板内容”字段
+      updateSchema({ field: 'sourceCode', show: true });
     }
   });
 

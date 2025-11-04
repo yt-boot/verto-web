@@ -61,6 +61,17 @@
                   </a-tag>
                 </div>
               </template>
+              <template v-else-if="appInfo.extra && appInfo.extra.techStackText">
+                {{ appInfo.extra.techStackText }}
+              </template>
+              <template v-else>
+                暂无数据
+              </template>
+            </a-descriptions-item>
+            <a-descriptions-item label="备注" :span="2">
+              <template v-if="appInfo.extra && appInfo.extra.remarks">
+                {{ appInfo.extra.remarks }}
+              </template>
               <template v-else>
                 暂无数据
               </template>
@@ -323,6 +334,16 @@
                 <a-input v-model:value="editModel.gitUrl" placeholder="请输入仓库地址" />
               </a-form-item>
             </a-col>
+            <a-col :span="24">
+              <a-form-item label="技术栈（附加）" name="techStackText">
+                <a-textarea v-model:value="editModel.techStackText" placeholder="例如：Vue3 + Vite + TypeScript + Ant Design Vue" rows="2" />
+              </a-form-item>
+            </a-col>
+            <a-col :span="24">
+              <a-form-item label="备注（附加）" name="remarks">
+                <a-textarea v-model:value="editModel.remarks" placeholder="请输入备注信息（如依赖说明、部署注意事项等）" rows="3" />
+              </a-form-item>
+            </a-col>
           </a-row>
         </a-form>
       </a-modal>
@@ -355,6 +376,11 @@ interface AppInfo {
     version: string;
     icon: string;
   }>;
+  // 解析自后端大字段 extraInfo 的附加信息
+  extra?: {
+    techStackText?: string;
+    remarks?: string;
+  };
   environments: Array<{
     name: string;
     url: string;
@@ -489,6 +515,14 @@ const appInfo = ref<AppInfo>({
   version: props.appDetail?.version || '',
   description: props.appDetail?.description || '',
   techStack: props.appDetail?.techStack || [],
+  extra: (() => {
+    try {
+      const raw = props.appDetail?.extraInfo || props.appDetail?.extra_info;
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      return {};
+    }
+  })(),
   environments: props.appDetail?.environments || [],
   gitInfo: {
     repoUrl: props.appDetail?.gitUrl || '',
@@ -519,6 +553,8 @@ function openEdit() {
     version: appInfo.value.version,
     description: appInfo.value.description,
     gitUrl: appInfo.value.gitInfo?.repoUrl || '',
+    techStackText: appInfo.value.extra?.techStackText || '',
+    remarks: appInfo.value.extra?.remarks || '',
   };
   editVisible.value = true;
 }
@@ -544,6 +580,11 @@ async function handleEditOk() {
     appDescription: editModel.value.description || '',
     // Git 仓库地址字段为 gitUrl
     gitUrl: editModel.value.gitUrl || '',
+    // 新增：附加信息（保存为JSON字符串）
+    extraInfo: JSON.stringify({
+      techStackText: editModel.value.techStackText || '',
+      remarks: editModel.value.remarks || '',
+    }),
   };
 
   try {
@@ -564,6 +605,17 @@ async function handleEditOk() {
         ...(appInfo.value.gitInfo || {}),
         repoUrl: newDetail.gitUrl || editModel.value.gitUrl || '',
       };
+
+      // 更新附加信息展示
+      try {
+        const raw = newDetail.extraInfo || newDetail.extra_info || submitData.extraInfo;
+        appInfo.value.extra = raw ? JSON.parse(raw) : {};
+      } catch (e) {
+        appInfo.value.extra = {
+          techStackText: editModel.value.techStackText || '',
+          remarks: editModel.value.remarks || '',
+        };
+      }
 
       // 通知父组件保存成功（方便刷新详情）
       emit('save', newDetail);

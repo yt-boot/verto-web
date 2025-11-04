@@ -1,6 +1,58 @@
 <template>
   <div class="pipeline-manager">
     <a-card :bordered="false" class="pm-card">
+      <!-- 流水线步骤（横向 Steps） -->
+      <div class="pm-steps">
+        <a-steps :current="currentStep" size="small">
+          <a-step title="分支合并" />
+          <a-step title="审核" />
+          <a-step title="构建" />
+          <a-step title="完成" />
+        </a-steps>
+        <!-- 步骤操作区：根据当前节点显示不同的提示与操作按钮 -->
+        <div class="pm-step-panel">
+          <template v-if="currentStep === 0">
+            <div class="pm-step-row">
+              <span class="pm-step-tip">当前节点：分支合并。请完成代码合并或选择分支后，进入审核。</span>
+              <div class="pm-step-actions">
+                <a-button type="primary" @click="onMergeComplete">模拟分支合并完成</a-button>
+                <a-button class="ml8" @click="resetFlow">重置流程</a-button>
+              </div>
+            </div>
+          </template>
+          <template v-else-if="currentStep === 1">
+            <div class="pm-step-row">
+              <span class="pm-step-tip">当前节点：审核。将向应用负责人发送审核通知，负责人审核通过后进入构建。</span>
+              <div class="pm-step-actions">
+                <a-button @click="sendReviewNotification" :disabled="notificationSent">{{ notificationSent ? '已发送通知' : '发送审核通知' }}</a-button>
+                <a-button type="primary" class="ml8" @click="reviewApproved">审核通过</a-button>
+                <a-button class="ml8" @click="resetFlow">重置流程</a-button>
+              </div>
+            </div>
+            <div v-if="lastNotificationText" class="pm-note">{{ lastNotificationText }}</div>
+          </template>
+          <template v-else-if="currentStep === 2">
+            <div class="pm-step-row">
+              <span class="pm-step-tip">当前节点：构建。系统将自动触发构建与发布，完成后进入“完成”节点。</span>
+              <div class="pm-step-actions">
+                <a-button type="primary" :loading="buildInProgress" @click="startBuild">{{ buildInProgress ? '构建中...' : '开始构建（模拟）' }}</a-button>
+                <a-button class="ml8" @click="resetFlow" :disabled="buildInProgress">重置流程</a-button>
+              </div>
+            </div>
+            <div v-if="buildInProgress" class="pm-note">已触发模拟 Jenkins 流水线，等待构建完成...</div>
+          </template>
+          <template v-else>
+            <div class="pm-step-row">
+              <span class="pm-step-tip">流程已完成。可以查看构建历史与日志。</span>
+              <div class="pm-step-actions">
+                <a-button type="primary" @click="loadHistory">刷新历史</a-button>
+                <a-button class="ml8" @click="resetFlow">重置流程</a-button>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
       <div class="pm-actions">
         <a-button type="primary" @click="openReleaseDrawer">
           新建发布
@@ -82,7 +134,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, onMounted, computed, h } from 'vue';
+import { ref, reactive, onMounted, onBeforeUnmount, computed, h } from 'vue';
 import { useMessage } from '/@/hooks/web/useMessage';
 import { formatToDateTime } from '/@/utils/dateUtil';
 import { getPipelineHistory, triggerPipeline, retryBuild, getBuildLogs, getGitBranches, getGitCommits, getProjectDetail } from '../Project.api';
@@ -92,6 +144,87 @@ import { Button } from '/@/components/Button';
 const props = defineProps<{ projectId: string | number; appId?: string | number }>();
 
 const { createMessage } = useMessage();
+
+// Steps 状态（0:分支合并, 1:审核, 2:构建, 3:完成）
+const currentStep = ref<number>(0);
+const notificationSent = ref<boolean>(false);
+const lastNotificationText = ref<string>('');
+const buildInProgress = ref<boolean>(false);
+let buildTimer: any = null;
+
+function resetFlow() {
+  if (buildTimer) {
+    clearTimeout(buildTimer);
+    buildTimer = null;
+  }
+  currentStep.value = 0;
+  notificationSent.value = false;
+  lastNotificationText.value = '';
+  buildInProgress.value = false;
+}
+
+function onMergeComplete() {
+  // 这里可结合分支选择（releaseForm.branch）进行校验，这里用 mock 简化
+  if (!releaseForm.branch) {
+    createMessage.warning('请先选择分支（在下方新建发布中可选择分支），再模拟合并完成');
+    return;
+  }
+  createMessage.success('分支合并完成，进入审核节点');
+  currentStep.value = 1;
+}
+
+function sendReviewNotification() {
+  notificationSent.value = true;
+  const appId = (props.appId ?? getAppIdFromProject(projectInfo.value)) as string | number | undefined;
+  // 简单模拟：向应用负责人发送通知（实际可从应用详情中读取负责人列表）
+  lastNotificationText.value = `已向应用${appId ? `(${appId})` : ''}负责人发送审核通知：请在平台内点击“审核通过”进入构建。`;
+  createMessage.info('已发送审核通知');
+}
+
+function reviewApproved() {
+  if (!notificationSent.value) {
+    // 未发送通知也允许直接通过，用于演示
+    createMessage.warning('未发送通知，直接进入构建（演示）');
+  }
+  currentStep.value = 2;
+  // 进入构建后自动开始模拟构建
+  startBuild();
+}
+
+function startBuild() {
+  if (buildInProgress.value) return;
+  buildInProgress.value = true;
+  createMessage.loading({ content: '已触发构建与发布（模拟）', duration: 1 });
+  // 可选：调用真实触发接口（使用 mock 环境），此处演示忽略失败
+  try {
+    const payload: any = {
+      projectId: String(props.projectId || ''),
+      environment: releaseForm.environment,
+      branch: releaseForm.branch || undefined,
+      commitId: releaseForm.commitId || undefined,
+      parameters: {
+        version: releaseForm.version || generateReleaseVersion(),
+        remark: releaseForm.remark || 'Steps 构建演示',
+        pipelineConfigId: releaseForm.pipelineConfigId || undefined,
+      },
+    };
+    if (releaseForm.bindingId) payload.bindingId = releaseForm.bindingId;
+    // 触发真实接口（若 mock 已配置则成功返回）
+    triggerPipeline(payload).catch(() => void 0);
+  } catch (e) {}
+  // 模拟 Jenkins 完成：3.5s 后跳转到完成
+  buildTimer = setTimeout(() => {
+    buildInProgress.value = false;
+    currentStep.value = 3;
+    createMessage.success('Jenkins 流水线完成，流程已进入“完成”节点');
+    // 完成后刷新一次历史，便于演示
+    loadHistory();
+  }, 3500);
+}
+
+onBeforeUnmount(() => {
+  if (buildTimer) clearTimeout(buildTimer);
+});
 
 // 历史列表
 const historyLoading = ref(false);
@@ -385,6 +518,29 @@ async function loadBindingsByEnv() {
 .pm-card {
   margin-top: 8px;
 }
+.pm-steps {
+  margin-bottom: 12px;
+}
+.pm-step-panel {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #f7f8fa;
+  border: 1px solid #eceef1;
+  border-radius: 6px;
+}
+.pm-step-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.pm-step-tip {
+  color: #333;
+  font-size: 13px;
+}
+.pm-step-actions {
+  display: flex;
+  align-items: center;
+}
 .pm-actions {
   display: flex;
   align-items: center;
@@ -406,5 +562,10 @@ async function loadBindingsByEnv() {
   border-radius: 6px;
   min-height: 300px;
   white-space: pre-wrap;
+}
+.pm-note {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #666;
 }
 </style>
