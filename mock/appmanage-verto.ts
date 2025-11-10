@@ -122,12 +122,12 @@ const appTemplateRelation: Record<string, string | undefined> = {
   'app_3_1': undefined,
 };
 
-export default [
+const baseRoutes: MockMethod[] = [
   /**
    * 应用列表
    */
   {
-    url: '/verto-backend/application/list',
+    url: '/verto/application/list',
     method: 'get',
     response: ({ query }) => {
       const { pageNo = 1, pageSize = 10, keyword } = query || {};
@@ -149,7 +149,7 @@ export default [
    * 查询应用详情
    */
   {
-    url: '/verto-backend/application/queryById',
+    url: '/verto/application/queryById',
     method: 'get',
     response: ({ query }) => {
       const { id } = query || {};
@@ -164,7 +164,7 @@ export default [
    * 新增应用
    */
   {
-    url: '/verto-backend/application/add',
+    url: '/verto/application/add',
     method: 'post',
     response: ({ body }) => {
       const {
@@ -200,7 +200,7 @@ export default [
    * 编辑应用
    */
   {
-    url: '/verto-backend/application/edit',
+    url: '/verto/application/edit',
     method: 'put',
     response: ({ body }) => {
       const { id } = body || {};
@@ -216,7 +216,7 @@ export default [
    * 删除应用
    */
   {
-    url: '/verto-backend/application/delete',
+    url: '/verto/application/delete',
     method: 'delete',
     response: ({ query }) => {
       const { id } = query || {};
@@ -235,7 +235,7 @@ export default [
    * 应用管理员列表（verto_application_staff_manager）
    */
   {
-    url: '/verto-backend/application/managers/list',
+    url: '/verto/application/managers/list',
     method: 'get',
     response: ({ query }) => {
       const { applicationId } = query || {};
@@ -248,7 +248,7 @@ export default [
    * 绑定应用管理员（支持批量）
    */
   {
-    url: '/verto-backend/application/managers/bind',
+    url: '/verto/application/managers/bind',
     method: 'post',
     response: ({ body }) => {
       const { applicationId, staffIds = [] } = body || {};
@@ -266,7 +266,7 @@ export default [
    * 解绑应用管理员（支持批量）
    */
   {
-    url: '/verto-backend/application/managers/unbind',
+    url: '/verto/application/managers/unbind',
     method: 'post',
     response: ({ body }) => {
       const { applicationId, staffIds = [] } = body || {};
@@ -282,7 +282,7 @@ export default [
    * 查询应用绑定的模板（一对一）
    */
   {
-    url: '/verto-backend/application/template/query',
+    url: '/verto/application/template/query',
     method: 'get',
     response: ({ query }) => {
       const { applicationId } = query || {};
@@ -296,7 +296,7 @@ export default [
    * 绑定模板（一对一），若已有绑定则覆盖
    */
   {
-    url: '/verto-backend/application/template/bind',
+    url: '/verto/application/template/bind',
     method: 'post',
     response: ({ body }) => {
       const { applicationId, templateId } = body || {};
@@ -312,7 +312,7 @@ export default [
    * 解绑模板（一对一）
    */
   {
-    url: '/verto-backend/application/template/unbind',
+    url: '/verto/application/template/unbind',
     method: 'post',
     response: ({ body }) => {
       const { applicationId } = body || {};
@@ -322,4 +322,24 @@ export default [
       return resultSuccess({ applicationId: appId, template: null });
     },
   },
-] as MockMethod[];
+];
+
+// 根据基础路由生成别名：/jeecgboot + url；以及去除 /verto 前缀的兼容路由
+const aliasRoutes: MockMethod[] = [];
+baseRoutes.forEach((r) => {
+  const url = r.url as any;
+  if (typeof url === 'string') {
+    // /jeecgboot + 原始 url
+    aliasRoutes.push({ ...r, url: '/jeecgboot' + url } as MockMethod);
+    // 若以 /verto 开头，兼容不带 /verto 的老路由
+    if (url.startsWith('/verto')) {
+      const stripped = url.replace(/^\/verto/, '');
+      aliasRoutes.push({ ...r, url: stripped } as MockMethod);
+      aliasRoutes.push({ ...r, url: '/jeecgboot' + stripped } as MockMethod);
+    }
+  } else if (url instanceof RegExp) {
+    aliasRoutes.push({ ...r, url: new RegExp('/jeecgboot' + url.source) } as MockMethod);
+  }
+});
+
+export default [...baseRoutes, ...aliasRoutes] as MockMethod[];

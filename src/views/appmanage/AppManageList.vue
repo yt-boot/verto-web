@@ -51,6 +51,9 @@
 
     <!-- 应用管理抽屉 -->
     <AppManageModal @register="registerDrawer" @success="handleSuccess" />
+    
+    <!-- 应用详情（全屏Modal） -->
+    <AppManageDetail v-if="detailVisible" :appId="detailAppId" @closed="detailVisible = false" />
   </div>
   
 </template>
@@ -60,6 +63,7 @@
   import { BasicTable, useTable, TableAction } from '/@/components/Table';
   import { useDrawer } from '/@/components/Drawer';
   import AppManageModal from './components/AppManageModal.vue';
+  import AppManageDetail from './AppManageDetail.vue';
   import { getAppList, deleteApp, getDomainDict, getActiveStaffList } from './AppManage.api';
   import { useMessage } from '/@/hooks/web/useMessage';
   import { useRouter } from 'vue-router';
@@ -67,11 +71,15 @@
 
   export default defineComponent({
     name: 'AppManageList',
-    components: { BasicTable, TableAction, AppManageModal },
+    components: { BasicTable, TableAction, AppManageModal, AppManageDetail },
     setup() {
       const router = useRouter();
       const { createMessage } = useMessage();
       const [registerDrawer, { openDrawer }] = useDrawer();
+      
+      // 详情弹窗控制
+      const detailVisible = ref(false);
+      const detailAppId = ref('');
 
       // 列定义
       const columns = [
@@ -226,7 +234,8 @@
       }
 
       function handleViewDetail(record: AppManageModel) {
-        router.push(`/appmanage/detail/${record.id}`);
+        detailAppId.value = String(record.id);
+        detailVisible.value = true;
       }
 
       function handleDeleteClick(record: AppManageModel) {
@@ -251,6 +260,8 @@
       return {
         registerTable,
         registerDrawer,
+        detailVisible,
+        detailAppId,
         handleCreateApp,
         handleEditClick,
         handleViewDetail,

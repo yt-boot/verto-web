@@ -5,7 +5,7 @@ import { defHttp } from '/@/utils/http/axios';
  */
 export function getConfigList(params: any) {
   return defHttp.get({
-    url: '/verto-backend/appmanage/config/list',
+    url: '/verto/appmanage/config/list',
     params,
   });
 }
@@ -20,7 +20,7 @@ export function saveConfig(params: any) {
     config: typeof params.config === 'string' ? params.config : JSON.stringify(params.config ?? {}),
   };
   return defHttp.post({
-    url: '/verto-backend/appmanage/config/save',
+    url: '/verto/appmanage/config/save',
     // 使用 data 作为请求体，避免被拼接到 URL
     data: payload,
   });
@@ -32,7 +32,7 @@ export function saveConfig(params: any) {
 export function validateConfig({ config, type }: { config: any; type?: string }) {
   const body = { config };
   return defHttp.post({
-    url: '/verto-backend/appmanage/config/validate',
+    url: '/verto/appmanage/config/validate',
     // 保持 type 作为查询/路径参数（若后端需要）。若后端读取 body 中的 type，可移入 data。
     params: { type },
     data: body,
@@ -47,7 +47,7 @@ export function importConfig(file: File, appId: string) {
   formData.append('file', file);
   formData.append('appId', appId);
   return defHttp.post({
-    url: '/verto-backend/appmanage/config/import',
+    url: '/verto/appmanage/config/import',
     params: formData,
     headers: {
       'Content-Type': 'multipart/form-data',
@@ -60,7 +60,7 @@ export function importConfig(file: File, appId: string) {
  */
 export function exportConfig(ids: string[]) {
   return defHttp.post({
-    url: '/verto-backend/appmanage/config/export',
+    url: '/verto/appmanage/config/export',
     data: { ids },
     responseType: 'blob',
   });
@@ -71,7 +71,7 @@ export function exportConfig(ids: string[]) {
  */
 export function getCodeReviewReports(params: any) {
   return defHttp.get({
-    url: '/verto-backend/appmanage/config/review/report',
+    url: '/verto/appmanage/config/review/report',
     params,
   });
 }
@@ -79,7 +79,7 @@ export function getCodeReviewReports(params: any) {
 export function deleteConfig(id: string) {
   return defHttp.delete(
     {
-      url: '/verto-backend/appmanage/config/delete',
+      url: '/verto/appmanage/config/delete',
       params: { id },
     },
     { joinParamsToUrl: true }
@@ -87,7 +87,7 @@ export function deleteConfig(id: string) {
 }
 export function getConfigDetail(id: string) {
   return defHttp.get({
-    url: '/verto-backend/appmanage/config/detail',
+    url: '/verto/appmanage/config/detail',
     params: { id },
   });
 }

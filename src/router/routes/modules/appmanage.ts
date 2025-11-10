@@ -29,7 +29,6 @@ const appmanage: AppRouteModule = {
         title: '应用详情',
         hideMenu: true,
         hideTab: false,
-        currentActiveMenu: '/appmanage/list',
       },
     },
   ],

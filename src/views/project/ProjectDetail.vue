@@ -46,6 +46,19 @@
                 {{ projectData?.gitBranch || '-' }}
               </a-descriptions-item>
               
+              <!-- 展示绑定的应用流水线链接 -->
+              <a-descriptions-item label="绑定流水线" :span="2">
+                <div v-if="boundPipeline">
+                  <div>
+                    已绑定：
+                    <a :href="boundPipeline.jobUrl" target="_blank">{{ boundPipeline.jobName }}</a>
+                    <span v-if="boundPipeline.environment">（{{ boundPipeline.environment }}）</span>
+                  </div>
+                  <div v-if="boundPipeline.remark" style="margin-top: 8px; color: #999;">备注：{{ boundPipeline.remark }}</div>
+                </div>
+                <div v-else>暂无绑定流水线</div>
+              </a-descriptions-item>
+              
             </a-descriptions>
           </div>
         </a-tab-pane>
@@ -53,7 +66,7 @@
         
 
         <!-- 流水线 -->
-        <a-tab-pane key="pipeline" tab="流水线">
+        <a-tab-pane key="pipeline" tab="流水线" v-if="!props.hidePipelineTab">
           <div class="tab-content">
             <div class="pipeline-manager">
               <!-- 仅保留新建发布与流水线历史，由 PipelineManager 统一承载 -->
@@ -113,15 +126,44 @@
   import PipelineManager from './components/PipelineManager.vue';
   import { formatToDateTime } from '/@/utils/dateUtil';
 
+  // 允许通过属性传入 projectId，并可选择隐藏流水线Tab（用于抽屉展示）
+  const props = defineProps<{ projectId?: string; hidePipelineTab?: boolean }>();
+
   const route = useRoute();
   const router = useRouter();
   const { createMessage } = useMessage();
   
-  // 项目ID
-  const projectId = computed(() => route.params?.id as string);
+  // 项目ID：优先使用外部传入的 props.projectId，其次使用路由参数
+  const projectId = computed(() => (props.projectId as string) || (route.params?.id as string));
   
   // 项目数据
   const projectData = ref<ProjectModel>();
+  
+  // 绑定应用的流水线数据（从 /verto/appmanage/pipeline/binding/list 获取用于回退解析）
+  type BindingItem = { id?: string | number; jobName: string; remark?: string; jobUrl?: string; environment?: string };
+  const pipelineOptions = ref<BindingItem[]>([]);
+  const selectedBindingId = ref<string | number | undefined>(undefined);
+  const boundPipeline = computed<BindingItem | null>(() => {
+    const cfg: any = projectData.value?.appConfig;
+    let appCfg = cfg;
+    if (typeof appCfg === 'string') {
+      try { appCfg = JSON.parse(appCfg); } catch (e) { appCfg = {}; }
+    }
+    if (appCfg && appCfg.pipelineBinding) {
+      return appCfg.pipelineBinding as BindingItem;
+    }
+    // 回退到本地存储的选择
+    const storageKey = getSelectionStorageKey(projectId.value);
+    const savedId = storageKey ? localStorage.getItem(storageKey) : null;
+    if (savedId) {
+      return pipelineOptions.value.find((b) => String(b.id) === String(savedId)) || null;
+    }
+    return null;
+  });
+  
+  function getSelectionStorageKey(pid?: string) {
+    return pid ? `projectPipelineSelection:${pid}` : '';
+  }
   
   // 当前激活的标签页
   const activeTab = ref('basic');
@@ -165,11 +207,51 @@
         designLinks = [];
       }
       result.designLinks = designLinks;
+      // 解析 appConfig 字段（如为字符串）
+      let appCfg: any = result?.appConfig;
+      if (typeof appCfg === 'string') {
+        try { appCfg = JSON.parse(appCfg); } catch (e) { appCfg = {}; }
+      }
+      result.appConfig = appCfg;
       projectData.value = result;
     } catch (error) {
       createMessage.error('加载项目详情失败');
     } finally {
       loading.value = false;
+    }
+  }
+
+  /**
+   * 加载绑定的流水线列表（不指定 environment，获取全部环境）
+   */
+  async function loadBindings() {
+    if (!projectData.value?.relatedAppId) return;
+    try {
+      const { defHttp } = await import('/@/utils/http/axios');
+      const res = await defHttp.get({
+        url: '/verto/appmanage/pipeline/binding/list',
+        params: { appId: projectData.value.relatedAppId },
+      });
+      pipelineOptions.value = Array.isArray(res?.records) ? res.records : [];
+      // 恢复本地选择
+      const storageKey = getSelectionStorageKey(projectId.value);
+      if (storageKey) {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          selectedBindingId.value = saved;
+        }
+      }
+    } catch (e) {
+      pipelineOptions.value = [];
+    }
+  }
+
+  function openSelectedPipeline() {
+    const binding = boundPipeline.value;
+    if (binding?.jobUrl) {
+      window.open(binding.jobUrl, '_blank');
+    } else {
+      createMessage.warning('当前绑定的流水线没有可跳转的链接');
     }
   }
 
@@ -309,8 +391,14 @@
   }
 
   // 组件挂载时加载数据
-  onMounted(() => {
-    loadProjectDetail();
+  onMounted(async () => {
+    await loadProjectDetail();
+    await loadBindings();
+  });
+
+  watch(projectId, async () => {
+    await loadProjectDetail();
+    await loadBindings();
   });
 </script>
 

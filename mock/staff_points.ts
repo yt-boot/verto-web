@@ -278,9 +278,9 @@ function getTotalPoints(staffId: string): number {
 }
 
 export default [
-  // ��Ա�б��������֣�
+  // 人员列表（含积分）
   {
-    url: '/verto-backend/staff/list',
+    url: '/verto/staff/list',
     method: 'get',
     response: ({ query }) => {
       const { pageNo = 1, pageSize = 10, name, employeeNo, email, status } = query;
@@ -308,9 +308,9 @@ export default [
     },
   },
 
-  // ��Ա����
+  // 人员详情
   {
-    url: '/verto-backend/staff/queryById',
+    url: '/verto/staff/queryById',
     method: 'get',
     response: ({ query }) => {
       const { id } = query;
@@ -319,9 +319,9 @@ export default [
     },
   },
 
-  // ��������
+  // 积分汇总
   {
-    url: '/verto-backend/staff/points/summary',
+    url: '/verto/staff/points/summary',
     method: 'get',
     response: ({ query }) => {
       const { staffId } = query;
@@ -330,9 +330,9 @@ export default [
     },
   },
 
-  // ������ˮ����ҳ��
+  // 积分流水分页
   {
-    url: '/verto-backend/staff/points/logs',
+    url: '/verto/staff/points/logs',
     method: 'get',
     response: ({ query }) => {
       const { staffId, pageNo = 1, pageSize = 10, eventType, sourceType } = query;
@@ -354,9 +354,9 @@ export default [
     },
   },
 
-  // ����Ա������ˮ����ҳ��（֧�ֶ��������� staffId、eventType、sourceType���ؼ��� keyword）
+  // 全员积分流水分页（支持 staffId、eventType、sourceType、keyword）
   {
-    url: '/verto-backend/staff/points/logs/all',
+    url: '/verto/staff/points/logs/all',
     method: 'get',
     response: ({ query }) => {
       const { staffId, pageNo = 1, pageSize = 10, eventType, sourceType, keyword } = query;
@@ -404,9 +404,9 @@ export default [
     },
   },
 
-  // �ֶ��������֣�����/��ʾ�ã�
+  // 手动调整积分（加/减分）
   {
-    url: '/verto-backend/staff/points/adjust',
+    url: '/verto/staff/points/adjust',
     method: 'post',
     response: ({ body }) => {
       const { staffId, delta = 0, remark = '手动调整', sourceType = 'OTHER', eventType = '手动调整', sourceId, sourceName } = body || {};

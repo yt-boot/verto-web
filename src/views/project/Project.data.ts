@@ -527,6 +527,15 @@ export const step2Schemas: FormSchema[] = [
     colProps: { span: 24 },
   },
   {
+    field: 'pipelineBinding',
+    label: '绑定应用流水线',
+    component: 'Input',
+    slot: 'pipelineBinding',
+    // 仅当已选择应用时显示
+    show: ({ values }) => !!values.appId,
+    colProps: { span: 24 },
+  },
+  {
     field: 'developerId',
     label: '开发人员',
     component: 'ApiSelect',

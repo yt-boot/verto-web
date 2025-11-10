@@ -40,16 +40,18 @@
     </BasicTable>
     <!-- 抽屉表单区域 -->
     <ProjectDrawer @register="registerDrawer" @success="handleSuccess" />
+    <!-- 项目详情抽屉 -->
+    <ProjectDetailDrawer @register="registerDetailDrawer" />
   </div>
 </template>
 
 <script lang="ts" name="project-list" setup>
   import { ref, computed, unref } from 'vue';
-  import { useRouter } from 'vue-router';
   import { BasicTable, useTable, TableAction } from '/@/components/Table';
   import { useDrawer } from '/@/components/Drawer';
   import { useListPage } from '/@/hooks/system/useListPage';
   import ProjectDrawer from './components/ProjectDrawer.vue';
+  import ProjectDetailDrawer from './components/ProjectDetailDrawer.vue';
   import { columns, searchFormSchema } from './Project.data';
   import { 
     getProjectList, 
@@ -64,10 +66,12 @@
 
   const checkedKeys = ref<Array<string | number>>([]);
   const { createMessage } = useMessage();
-  const router = useRouter();
+  // const router = useRouter(); // 已改为全屏弹窗方式，不再使用路由跳转
   
   // 注册抽屉
   const [registerDrawer, { openDrawer }] = useDrawer();
+  // 项目详情抽屉
+  const [registerDetailDrawer, { openDrawer: openDetailDrawer }] = useDrawer();
   
   //注册table数据
   const { prefixCls, tableContext, onExportXls, onImportXls } = useListPage({
@@ -82,7 +86,7 @@
         autoSubmitOnEnter: true,
       },
       actionColumn: {
-        width: 180,
+        width: 220,
         fixed: 'right',
       },
     },
@@ -112,9 +116,48 @@
    * 详情
    */
   function handleDetail(record: Recordable) {
-    console.log('点击详情按钮，准备跳转到详情页面，记录ID:', record.id);
-    // 跳转到独立的详情页面
-    router.push(`/project/detail/${record.id}`);
+    console.log('点击详情按钮，准备以抽屉方式展示详情，记录ID:', record.id);
+    openDetailDrawer(true, { projectId: record.id, record });
+  }
+
+  /**
+   * 发布：跳转到已绑定的应用流水线
+   */
+  async function handlePublish(record: Recordable) {
+    // 优先使用项目记录中的 appConfig.pipelineBinding
+    let appCfg: any = record?.appConfig;
+    if (typeof appCfg === 'string') {
+      try { appCfg = JSON.parse(appCfg); } catch (e) { appCfg = {}; }
+    }
+    const bound = appCfg?.pipelineBinding;
+    if (bound?.jobUrl) {
+      window.open(bound.jobUrl, '_blank');
+      return;
+    }
+    // 回退到本地存储的选择
+    const projectId = String(record.id);
+    const storageKey = `projectPipelineSelection:${projectId}`;
+    const selectedId = localStorage.getItem(storageKey);
+    if (!selectedId) {
+      createMessage.warning('请先在新增/编辑表单中绑定流水线，或在详情页选择并保存流水线');
+      return;
+    }
+    try {
+      const { defHttp } = await import('/@/utils/http/axios');
+      const res = await defHttp.get({
+        url: '/verto/appmanage/pipeline/binding/list',
+        params: { appId: record.relatedAppId },
+      });
+      const list = Array.isArray(res?.records) ? res.records : [];
+      const binding = list.find((b: any) => String(b.id) === String(selectedId));
+      if (binding?.jobUrl) {
+        window.open(binding.jobUrl, '_blank');
+      } else {
+        createMessage.warning('未找到可跳转的流水线链接，请重新选择');
+      }
+    } catch (e) {
+      createMessage.error('获取绑定流水线失败');
+    }
   }
 
   /**
@@ -154,6 +197,11 @@
       {
         label: '详情',
         onClick: handleDetail.bind(null, record),
+      },
+      {
+        label: '发布',
+        color: 'success',
+        onClick: handlePublish.bind(null, record),
       },
       {
         label: '删除',

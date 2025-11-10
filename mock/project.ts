@@ -363,12 +363,12 @@ const projectStats = {
   failed: 2
 };
 
-export default [
+const baseRoutes: MockMethod[] = [
   /**
    * 获取相关应用列表
    */
   {
-    url: '/jeecgboot/project/related-apps',
+    url: '/verto/project/related-apps',
     method: 'get',
     response: () => {
       return resultSuccess(relatedAppsData);
@@ -379,7 +379,7 @@ export default [
    * 获取Git分支列表
    */
   {
-    url: '/jeecgboot/project/git/branches',
+    url: '/verto/project/git/branches',
     method: 'get',
     response: ({ query }) => {
       const { projectId } = query;
@@ -392,7 +392,7 @@ export default [
    * 获取应用配置
    */
   {
-    url: '/jeecgboot/project/app/config',
+    url: '/verto/project/app/config',
     method: 'get',
     response: ({ query }) => {
       const { projectId } = query;
@@ -408,7 +408,7 @@ export default [
    * 保存应用配置
    */
   {
-    url: '/jeecgboot/project/app/config',
+    url: '/verto/project/app/config',
     method: 'post',
     response: ({ body }) => {
       const { projectId, config } = body;
@@ -424,7 +424,7 @@ export default [
    * 获取项目时间线
    */
   {
-    url: '/jeecgboot/project/timeline',
+    url: '/verto/project/timeline',
     method: 'get',
     response: ({ query }) => {
       const { projectId } = query;
@@ -437,7 +437,7 @@ export default [
    * 获取项目列表
    */
   {
-    url: '/jeecgboot/project/list',
+    url: '/verto/project/list',
     method: 'get',
     response: ({ query }) => {
       const { pageNo = 1, pageSize = 10, name, status, type } = query;
@@ -480,7 +480,7 @@ export default [
    * 获取项目详情
    */
   {
-    url: /\/jeecgboot\/project\/queryById/,
+    url: /\/verto\/project\/queryById/,
     method: 'get',
     response: ({ query }) => {
       const { id } = query;
@@ -496,7 +496,7 @@ export default [
    * 新增项目
    */
   {
-    url: '/jeecgboot/project/add',
+    url: '/verto/project/add',
     method: 'post',
     response: ({ body }) => {
       const newProject = {
@@ -514,7 +514,7 @@ export default [
    * 编辑项目
    */
   {
-    url: '/jeecgboot/project/edit',
+    url: '/verto/project/edit',
     method: 'put',
     response: ({ body }) => {
       const { id } = body;
@@ -535,7 +535,7 @@ export default [
    * 删除项目
    */
   {
-    url: /\/jeecgboot\/project\/delete/,
+    url: /\/verto\/project\/delete/,
     method: 'delete',
     response: ({ query }) => {
       const { id } = query;
@@ -552,7 +552,7 @@ export default [
    * 批量删除项目
    */
   {
-    url: '/jeecgboot/project/deleteBatch',
+    url: '/verto/project/deleteBatch',
     method: 'delete',
     response: ({ body }) => {
       const { ids } = body;
@@ -570,7 +570,7 @@ export default [
    * 导入项目
    */
   {
-    url: '/jeecgboot/project/importExcel',
+    url: '/verto/project/importExcel',
     method: 'post',
     response: () => {
       return resultSuccess('导入成功');
@@ -581,7 +581,7 @@ export default [
    * 导出项目
    */
   {
-    url: '/jeecgboot/project/exportXls',
+    url: '/verto/project/exportXls',
     method: 'get',
     response: () => {
       return resultSuccess('导出成功');
@@ -592,7 +592,7 @@ export default [
    * 获取项目统计
    */
   {
-    url: '/jeecgboot/project/statistics',
+    url: '/verto/project/statistics',
     method: 'get',
     response: () => {
       return resultSuccess(projectStats);
@@ -603,7 +603,7 @@ export default [
    * 获取应用列表（用于项目关联）
    */
   {
-    url: '/jeecgboot/appmanage/app/list',
+    url: '/verto/appmanage/app/list',
     method: 'get',
     response: ({ query }) => {
       const { pageNo = 1, pageSize = 10 } = query;
@@ -650,4 +650,31 @@ export default [
       });
     },
   },
-] as MockMethod[];
+];
+
+// 为 /verto 路由生成 /jeecgboot 前缀别名，以及剥离 /verto 的兼容路由
+const aliasRoutes: MockMethod[] = [];
+baseRoutes.forEach((r) => {
+  const url = r.url as any;
+  if (typeof url === 'string' && url.startsWith('/verto')) {
+    const stripped = url.replace(/^\/verto/, '');
+    aliasRoutes.push({ ...r, url: '/jeecgboot' + url } as MockMethod);
+    aliasRoutes.push({ ...r, url: stripped } as MockMethod);
+    aliasRoutes.push({ ...r, url: '/jeecgboot' + stripped } as MockMethod);
+  } else if (url instanceof RegExp) {
+    const src: string = url.source;
+    // 仅处理包含 /verto/project 的正则路由
+    if (src.includes('\\/verto\\/project')) {
+      const jeecgSrc = src.replace('\\/verto', '\\/jeecgboot');
+      aliasRoutes.push({ ...r, url: new RegExp(jeecgSrc) } as MockMethod);
+
+      const strippedSrc = src.replace('\\/verto', '');
+      aliasRoutes.push({ ...r, url: new RegExp(strippedSrc) } as MockMethod);
+
+      const jeecgStrippedSrc = strippedSrc.replace(/^/, '\\/jeecgboot');
+      aliasRoutes.push({ ...r, url: new RegExp(jeecgStrippedSrc) } as MockMethod);
+    }
+  }
+});
+
+export default [...baseRoutes, ...aliasRoutes] as MockMethod[];

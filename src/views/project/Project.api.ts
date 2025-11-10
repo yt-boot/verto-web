@@ -3,66 +3,68 @@ import { ProjectModel, PipelineStatus, AppConfig } from './Project.data';
 
 enum Api {
   // 项目基础API
-  list = '/project/list',
+  list = '/verto/project/list',
   // 后端控制器为 @RequestMapping("/project")，新增接口为 @PostMapping("/add")
-  save = '/project/add',
-  edit = '/project/edit',
-  deleteOne = '/project/delete',
-  deleteBatch = '/project/deleteBatch',
-  importExcel = '/project/importExcel',
-  exportXls = '/project/exportXls',
+  save = '/verto/project/add',
+  edit = '/verto/project/edit',
+  deleteOne = '/verto/project/delete',
+  deleteBatch = '/verto/project/deleteBatch',
+  importExcel = '/verto/project/importExcel',
+  exportXls = '/verto/project/exportXls',
   // 详情接口修正：后端提供的是 queryById
-  detail = '/project/queryById',
+  detail = '/verto/project/queryById',
   
   // Git分支管理API
-  createGitBranch = '/project/git/createBranch',
-  getGitBranches = '/project/git/branches',
-  getGitCommits = '/project/git/commits',
-  deleteGitBranch = '/project/git/deleteBranch',
+  createGitBranch = '/verto/project/git/createBranch',
+  getGitBranches = '/verto/project/git/branches',
+  getGitCommits = '/verto/project/git/commits',
+  deleteGitBranch = '/verto/project/git/deleteBranch',
   
   // 应用配置API
-  getAppConfig = '/project/appConfig/get',
-  saveAppConfig = '/project/appConfig/save',
+  getAppConfig = '/verto/project/appConfig/get',
+  saveAppConfig = '/verto/project/appConfig/save',
   
   // 流水线配置API - 与mock保持一致
-  getPipelineConfig = '/project/pipeline/config/get',
-  savePipelineConfig = '/project/pipeline/config/save',
-  togglePipelineConfig = '/project/pipeline/config/toggle',
+  getPipelineConfig = '/verto/project/pipeline/config/get',
+  savePipelineConfig = '/verto/project/pipeline/config/save',
+  togglePipelineConfig = '/verto/project/pipeline/config/toggle',
   
   // 流水线状态API - 与mock保持一致
-  getPipelineStatus = '/project/pipeline/status',
+  getPipelineStatus = '/verto/project/pipeline/status',
   
   // 流水线历史API - 与mock保持一致
-  getPipelineHistory = '/project/pipeline/history',
-  getBuildDetail = '/project/pipeline/build',
-  deleteBuild = '/project/pipeline/build/delete',
-  batchDeleteBuilds = '/project/pipeline/build/batch-delete',
+  getPipelineHistory = '/verto/project/pipeline/history',
+  getBuildDetail = '/verto/project/pipeline/build',
+  deleteBuild = '/verto/project/pipeline/build/delete',
+  batchDeleteBuilds = '/verto/project/pipeline/build/batch-delete',
   
   // 流水线执行API - 与mock保持一致
-  triggerPipeline = '/project/pipeline/trigger',
-  cancelPipeline = '/project/pipeline/cancel',
-  retryBuild = '/project/pipeline/build/retry',
+  triggerPipeline = '/verto/project/pipeline/trigger',
+  cancelPipeline = '/verto/project/pipeline/cancel',
+  retryBuild = '/verto/project/pipeline/build/retry',
   
   // 流水线阶段API - 与mock保持一致
-  continueStage = '/project/pipeline/stage/continue',
-  retryPipelineStage = '/project/pipeline/retry',
-  skipPipelineStage = '/project/pipeline/skip',
-  cancelStage = '/project/pipeline/stage/cancel',
-  getStageLogs = '/project/pipeline/logs',
+  continueStage = '/verto/project/pipeline/stage/continue',
+  retryPipelineStage = '/verto/project/pipeline/retry',
+  skipPipelineStage = '/verto/project/pipeline/skip',
+  cancelStage = '/verto/project/pipeline/stage/cancel',
+  getStageLogs = '/verto/project/pipeline/logs',
   
   // 流水线日志API - 与mock保持一致
-  getBuildLogs = '/project/pipeline/logs',
-  downloadBuildLogs = '/project/pipeline/build/logs/download',
-  batchDownloadLogs = '/project/pipeline/build/batch-download',
+  getBuildLogs = '/verto/project/pipeline/logs',
+  downloadBuildLogs = '/verto/project/pipeline/build/logs/download',
+  batchDownloadLogs = '/verto/project/pipeline/build/batch-download',
   
   // 流水线部署API - 与mock保持一致
-  deployPipeline = '/project/pipeline/deploy',
-  stopPipeline = '/project/pipeline/stop',
+  deployPipeline = '/verto/project/pipeline/deploy',
+  stopPipeline = '/verto/project/pipeline/stop',
   
   // 关联数据API
   // 修正路径：后端控制器为 @RequestMapping("/appmanage/app")，列表接口为 "/list"
-  getAppList = '/appmanage/app/list',
-  getUserList = '/staff/list',
+  getAppList = '/verto/appmanage/app/list',
+  getUserList = '/verto/staff/list',
+  // 应用流水线绑定列表
+  getPipelineBindingList = '/verto/appmanage/pipeline/binding/list',
 }
 
 /**
@@ -395,6 +397,12 @@ export const getAppList = (params?: any) =>
  */
 export const getUserList = (params?: any) =>
   defHttp.get<any[]>({ url: Api.getUserList, params });
+
+/**
+ * 获取某应用下已绑定的 Jenkins 流水线列表
+ */
+export const getPipelineBindingList = (params: { appId: string }) =>
+  defHttp.get<any>({ url: Api.getPipelineBindingList, params });
 
 /**
  * 生成Git分支名称

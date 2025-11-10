@@ -140,10 +140,10 @@ const runningStatusByPipelineId: Record<string, BuildRecord | null> = {
   pl_3: null,
 };
 
-export default [
+const baseRoutes: MockMethod[] = [
   /** 列出应用下的流水线（verto_pipeline） */
   {
-    url: '/verto-backend/pipeline/list',
+    url: '/verto/pipeline/list',
     method: 'get',
     response: ({ query }) => {
       const { applicationId, pageNo = 1, pageSize = 10 } = query || {};
@@ -154,7 +154,7 @@ export default [
 
   /** 查询流水线详情 */
   {
-    url: '/verto-backend/pipeline/queryById',
+    url: '/verto/pipeline/queryById',
     method: 'get',
     response: ({ query }) => {
       const { id } = query || {};
@@ -167,7 +167,7 @@ export default [
 
   /** 新增流水线 */
   {
-    url: '/verto-backend/pipeline/add',
+    url: '/verto/pipeline/add',
     method: 'post',
     response: ({ body }) => {
       const { applicationId, name, description, enabled = true, autoTrigger = false, environments = [] } = body || {};
@@ -192,7 +192,7 @@ export default [
 
   /** 编辑流水线 */
   {
-    url: '/verto-backend/pipeline/edit',
+    url: '/verto/pipeline/edit',
     method: 'put',
     response: ({ body }) => {
       const { id } = body || {};
@@ -213,7 +213,7 @@ export default [
 
   /** 删除流水线 */
   {
-    url: '/verto-backend/pipeline/delete',
+    url: '/verto/pipeline/delete',
     method: 'delete',
     response: ({ query }) => {
       const { id } = query || {};
@@ -233,7 +233,7 @@ export default [
 
   /** 触发运行（新建构建记录为 queued->running） */
   {
-    url: '/verto-backend/pipeline/run',
+    url: '/verto/pipeline/run',
     method: 'post',
     response: ({ body }) => {
       const { pipelineId, branch = 'develop', author = 'system' } = body || {};
@@ -264,7 +264,7 @@ export default [
 
   /** 获取运行状态 */
   {
-    url: '/verto-backend/pipeline/status',
+    url: '/verto/pipeline/status',
     method: 'get',
     response: ({ query }) => {
       const { pipelineId } = query || {};
@@ -276,7 +276,7 @@ export default [
 
   /** 构建历史 */
   {
-    url: '/verto-backend/pipeline/history',
+    url: '/verto/pipeline/history',
     method: 'get',
     response: ({ query }) => {
       const { pipelineId, pageNo = 1, pageSize = 10 } = query || {};
@@ -287,7 +287,7 @@ export default [
 
   /** 构建详情 */
   {
-    url: '/verto-backend/pipeline/build/detail',
+    url: '/verto/pipeline/build/detail',
     method: 'get',
     response: ({ query }) => {
       const { buildId } = query || {};
@@ -306,7 +306,7 @@ export default [
 
   /** 下载构建日志（模拟文本） */
   {
-    url: '/verto-backend/pipeline/build/logs/download',
+    url: '/verto/pipeline/build/logs/download',
     method: 'get',
     response: ({ query }) => {
       const { buildId } = query || {};
@@ -317,7 +317,7 @@ export default [
 
   /** 对比构建 */
   {
-    url: '/verto-backend/pipeline/build/compare',
+    url: '/verto/pipeline/build/compare',
     method: 'post',
     response: ({ body }) => {
       const { pipelineId, buildIds } = body || {};
@@ -337,7 +337,7 @@ export default [
 
   /** 删除构建（历史记录中移除） */
   {
-    url: '/verto-backend/pipeline/build/delete',
+    url: '/verto/pipeline/build/delete',
     method: 'delete',
     response: ({ query }) => {
       const { buildId } = query || {};
@@ -354,4 +354,22 @@ export default [
       return resultError('构建不存在');
     },
   },
-] as MockMethod[];
+];
+
+// 生成 /jeecgboot 前缀别名，以及去掉 /verto 前缀的兼容路由
+const aliasRoutes: MockMethod[] = [];
+baseRoutes.forEach((r) => {
+  const url = r.url as any;
+  if (typeof url === 'string') {
+    aliasRoutes.push({ ...r, url: '/jeecgboot' + url } as MockMethod);
+    if (url.startsWith('/verto')) {
+      const stripped = url.replace(/^\/verto/, '');
+      aliasRoutes.push({ ...r, url: stripped } as MockMethod);
+      aliasRoutes.push({ ...r, url: '/jeecgboot' + stripped } as MockMethod);
+    }
+  } else if (url instanceof RegExp) {
+    aliasRoutes.push({ ...r, url: new RegExp('/jeecgboot' + url.source) } as MockMethod);
+  }
+});
+
+export default [...baseRoutes, ...aliasRoutes] as MockMethod[];

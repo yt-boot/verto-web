@@ -28,33 +28,20 @@
     <!-- 人员抽屉：新增 / 编辑 / 查看 -->
     <StaffDrawer @register="registerDrawer" @success="handleSuccess" />
 
-    <!-- 积分流水抽屉 -->
-    <BasicDrawer
-      v-model:open="pointsDrawerVisible"
-      :title="pointsDrawerTitle"
-      :width="720"
-      showFooter
-      :showOkBtn="false"
-      :showCancelBtn="true"
-      :destroy-on-close="true"
-    >
-      <BasicTable @register="registerPointsTable" />
-    </BasicDrawer>
+    <!-- 已移除：积分流水抽屉 -->
   </div>
 </template>
 
 <script lang="ts" name="system-staff" setup>
   import { ref, computed, unref } from 'vue';
   import { BasicTable, TableAction, ActionItem } from '/@/components/Table';
-  import { useTable } from '/@/components/Table';
   import { Icon } from '/@/components/Icon';
   import StaffDrawer from './StaffDrawer.vue';
   import { useDrawer } from '/@/components/Drawer';
-  import { BasicDrawer } from '/@/components/Drawer';
   import { useMessage } from '/@/hooks/web/useMessage';
   import { useListPage } from '/@/hooks/system/useListPage';
   import { columns, searchFormSchema, StaffModel } from './staff.data';
-  import { getStaffList, deleteStaff, batchDeleteStaff, getImportUrl, getExportUrl, getStaffPointsLogs } from './staff.api';
+  import { getStaffList, deleteStaff, batchDeleteStaff, getImportUrl, getExportUrl } from './staff.api';
 
   const { createMessage, createConfirm } = useMessage();
   // 注册抽屉
@@ -77,7 +64,8 @@
         fullScreen: true,
       },
       actionColumn: {
-        width: 300,
+        fixed: 'right',
+        width: 240,
         title: '操作',
         dataIndex: 'action',
         slots: { customRender: 'action' },
@@ -97,39 +85,6 @@
 
   // 注册table数据
   const [registerTable, { reload }, { rowSelection, selectedRows, selectedRowKeys }] = tableContext;
-
-  // 积分流水抽屉相关
-  const pointsDrawerVisible = ref(false);
-  const pointsDrawerTitle = ref('积分流水');
-  const currentStaffForPoints = ref<StaffModel | null>(null);
-  const [registerPointsTable, { reload: reloadPointsTable }] = useTable({
-    title: '积分流水',
-    immediate: false,
-    columns: [
-      { title: '事件类型', dataIndex: 'eventType', width: 160 },
-      { title: '来源类型', dataIndex: 'sourceType', width: 120 },
-      { title: '来源名称', dataIndex: 'sourceName', width: 200 },
-      { title: '变动积分', dataIndex: 'delta', width: 100 },
-      { title: '备注', dataIndex: 'remark', width: 240 },
-      { title: '创建时间', dataIndex: 'createTime', width: 180 },
-    ],
-    api: async (params) => {
-      const staffId = currentStaffForPoints.value?.id;
-      if (!staffId) {
-        return { items: [], total: 0 } as any;
-      }
-      const { page = 1, pageSize = 10 } = params || {};
-      const res = await getStaffPointsLogs(staffId, { pageNo: page, pageSize });
-      const list = (res && (res.records || res.list)) || [];
-      const total = (res && (res.total || list.length)) || 0;
-      return { items: list, total } as any;
-    },
-    rowKey: 'id',
-    useSearchForm: false,
-    showTableSetting: true,
-    pagination: true,
-    size: 'small',
-  });
 
   /**
    * 新增人员
@@ -155,17 +110,6 @@
   function handleView(record: StaffModel) {
     setDrawerProps({ showFooter: true, showOkBtn: false, showCancelBtn: true, title: '人员详情' });
     openDrawer(true, { isView: true, record });
-  }
-
-  /**
-   * 查看积分流水（抽屉）
-   */
-  function handleViewPoints(record: StaffModel) {
-    currentStaffForPoints.value = record;
-    pointsDrawerTitle.value = `积分流水 - ${record.name}`;
-    pointsDrawerVisible.value = true;
-    // 延迟触发加载，确保抽屉渲染完成
-    setTimeout(() => reloadPointsTable());
   }
 
   /**
@@ -216,12 +160,6 @@
         label: '查看',
         icon: 'ant-design:eye-outlined',
         onClick: handleView.bind(null, record),
-      },
-
-      {
-        label: '积分流水',
-        icon: 'ant-design:file-search-outlined',
-        onClick: handleViewPoints.bind(null, record),
       },
 
       {

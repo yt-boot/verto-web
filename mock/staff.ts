@@ -272,12 +272,12 @@ const departmentStats = [
   { department: '设计部', count: 2, percentage: 13.3 },
   { department: '测试部', count: 1, percentage: 6.7 },
 ];
-export default [
+const baseRoutes: MockMethod[] = [
   /**
    * 获取人员列表
    */
   {
-    url: '/jeecgboot/staff/list',
+    url: '/verto/staff/list',
     method: 'get',
     response: ({ query }) => {
       const { pageNo = 1, pageSize = 10, name, employeeNo, email, status } = query;
@@ -319,10 +319,39 @@ export default [
   },
 
   /**
+   * 获取在职人员（active）列表，用于下拉选择等场景
+   */
+  {
+    url: '/verto/staff/active',
+    method: 'get',
+    response: ({ query }) => {
+      const { pageNo = 1, pageSize = 10, keyword, name, realname, username, employeeNo } = query || {};
+
+      // 仅保留在职人员（status === 1）
+      let filteredList = staffList.filter((item) => item.status === 1);
+
+      // 兼容多种关键字过滤字段
+      const kw = (keyword || name || realname || username || employeeNo || '').toString().trim().toLowerCase();
+      if (kw) {
+        filteredList = filteredList.filter((item) => {
+          const id = String(item.id || '').toLowerCase();
+          const nm = String(item.name || '').toLowerCase();
+          const mail = String(item.email || '').toLowerCase();
+          const eno = String(item.employeeNo || '').toLowerCase();
+          return id.includes(kw) || nm.includes(kw) || mail.includes(kw) || eno.includes(kw);
+        });
+      }
+
+      // 分页处理
+      return resultPageSuccess(pageNo, pageSize, filteredList);
+    },
+  },
+
+  /**
    * 获取人员详情
    */
   {
-    url: '/jeecgboot/staff/queryById',
+    url: '/verto/staff/queryById',
     method: 'get',
     response: ({ query }) => {
       const { id } = query;
@@ -335,7 +364,7 @@ export default [
    * 新增人员
    */
   {
-    url: '/jeecgboot/staff/add',
+    url: '/verto/staff/add',
     method: 'post',
     response: ({ body }) => {
       const newStaff = {
@@ -355,7 +384,7 @@ export default [
    * 编辑人员
    */
   {
-    url: '/jeecgboot/staff/edit',
+    url: '/verto/staff/edit',
     method: 'put',
     response: ({ body }) => {
       const { id } = body;
@@ -375,7 +404,7 @@ export default [
    * 删除人员
    */
   {
-    url: '/jeecgboot/staff/delete',
+    url: '/verto/staff/delete',
     method: 'delete',
     response: ({ query }) => {
       const { id } = query;
@@ -391,7 +420,7 @@ export default [
    * 批量删除人员
    */
   {
-    url: '/jeecgboot/staff/deleteBatch',
+    url: '/verto/staff/deleteBatch',
     method: 'delete',
     response: ({ body }) => {
       const { ids } = body;
@@ -409,7 +438,7 @@ export default [
    * 导出人员数据
    */
   {
-    url: '/jeecgboot/staff/exportXls',
+    url: '/verto/staff/exportXls',
     method: 'get',
     response: ({ query }) => {
       // 模拟导出功能，实际应该返回文件流
@@ -424,7 +453,7 @@ export default [
    * 导入人员数据
    */
   {
-    url: '/jeecgboot/staff/importExcel',
+    url: '/verto/staff/importExcel',
     method: 'post',
     response: ({ body }) => {
       // 模拟导入功能
@@ -442,7 +471,7 @@ export default [
    * 获取技能统计
    */
   {
-    url: '/jeecgboot/staff/skillsStats',
+    url: '/verto/staff/skillsStats',
     method: 'get',
     response: () => {
       return resultSuccess(skillsStats);
@@ -453,7 +482,7 @@ export default [
    * 获取部门统计
    */
   {
-    url: '/jeecgboot/staff/departmentStats',
+    url: '/verto/staff/departmentStats',
     method: 'get',
     response: () => {
       return resultSuccess(departmentStats);
@@ -464,7 +493,7 @@ export default [
    * 检查工号是否重复
    */
   {
-    url: '/jeecgboot/staff/checkEmployeeNo',
+    url: '/verto/staff/checkEmployeeNo',
     method: 'get',
     response: ({ query }) => {
       const { employeeNo, id } = query;
@@ -479,7 +508,7 @@ export default [
    * 检查邮箱是否重复
    */
   {
-    url: '/jeecgboot/staff/checkEmail',
+    url: '/verto/staff/checkEmail',
     method: 'get',
     response: ({ query }) => {
       const { email, id } = query;
@@ -494,7 +523,7 @@ export default [
    * 检查工号是否重复（延迟检查）
    */
   {
-    url: '/jeecgboot/staff/checkEmployeeNoWithDelay',
+    url: '/verto/staff/checkEmployeeNoWithDelay',
     method: 'get',
     response: ({ query }) => {
       const { employeeNo, id } = query;
@@ -514,7 +543,7 @@ export default [
    * 获取技能字典
    */
   {
-    url: '/jeecgboot/sys/dict/getDictItems/staff_skills',
+    url: '/sys/dict/getDictItems/staff_skills',
     method: 'get',
     response: () => {
       const skillDict = [
@@ -537,4 +566,29 @@ export default [
       return resultSuccess(skillDict);
     },
   },
-] as MockMethod[];
+];
+
+// 补充多种别名，确保通过不同前缀发起的请求也能命中 mock：
+// 1) /jeecgboot + 原始url（/jeecgboot/verto/... 或 /jeecgboot/sys/...）
+// 2) 去掉 /verto 前缀的等价 url（/staff/...）
+// 3) /jeecgboot + 去掉 /verto 前缀的 url（/jeecgboot/staff/...）
+const aliasRoutes: MockMethod[] = [];
+baseRoutes.forEach((r) => {
+  const url = r.url as any;
+  if (typeof url === 'string') {
+    // 1) /jeecgboot + 原始url
+    aliasRoutes.push({ ...r, url: '/jeecgboot' + url } as MockMethod);
+
+    if (url.startsWith('/verto')) {
+      const stripped = url.replace(/^\/verto/, '');
+      // 2) 去掉 /verto 前缀
+      aliasRoutes.push({ ...r, url: stripped } as MockMethod);
+      // 3) /jeecgboot + 去掉 /verto 前缀
+      aliasRoutes.push({ ...r, url: '/jeecgboot' + stripped } as MockMethod);
+    }
+  } else if (url instanceof RegExp) {
+    aliasRoutes.push({ ...r, url: new RegExp('/jeecgboot' + url.source) } as MockMethod);
+  }
+});
+
+export default [...baseRoutes, ...aliasRoutes] as MockMethod[];

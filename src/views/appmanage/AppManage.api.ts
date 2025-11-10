@@ -3,65 +3,65 @@ import { Modal } from 'ant-design-vue';
 
 export enum Api {
   // 应用管理
-  list = '/appmanage/app/list',
-  save = '/appmanage/app/add',
-  edit = '/appmanage/app/edit',
-  delete = '/appmanage/app/delete',
-  queryById = '/appmanage/app/queryById',
-  batchDelete = '/appmanage/app/deleteBatch',
+  list = '/verto/appmanage/app/list',
+  save = '/verto/appmanage/app/add',
+  edit = '/verto/appmanage/app/edit',
+  delete = '/verto/appmanage/app/delete',
+  queryById = '/verto/appmanage/app/queryById',
+  batchDelete = '/verto/appmanage/app/deleteBatch',
   // 获取用户列表（用于负责人选择）
   getUserList = '/sys/user/list',
   // 获取领域字典
   getDomainDict = '/sys/dict/getDictItems/app_domain',
   
   // Staff模块接口
-  staffList = '/staff/list',
-  staffActive = '/staff/active',
-  staffQueryById = '/staff/queryById',
-  staffAdd = '/staff/add',
-  staffEdit = '/staff/edit',
-  staffDelete = '/staff/delete',
-  staffDeleteBatch = '/staff/deleteBatch',
+  staffList = '/verto/staff/list',
+  staffActive = '/verto/staff/active',
+  staffQueryById = '/verto/staff/queryById',
+  staffAdd = '/verto/staff/add',
+  staffEdit = '/verto/staff/edit',
+  staffDelete = '/verto/staff/delete',
+  staffDeleteBatch = '/verto/staff/deleteBatch',
   
   // 流水线配置相关
-  getPipelineConfig = '/appmanage/pipeline/config',
-  savePipelineConfig = '/project/pipeline/config/save',
-  deletePipelineConfig = '/appmanage/pipeline/config/delete',
-  togglePipelineConfig = '/appmanage/pipeline/config/toggle',
-  copyPipelineConfig = '/appmanage/pipeline/config/copy',
+  getPipelineConfig = '/verto/appmanage/pipeline/config',
+  savePipelineConfig = '/verto/project/pipeline/config/save',
+  deletePipelineConfig = '/verto/appmanage/pipeline/config/delete',
+  togglePipelineConfig = '/verto/appmanage/pipeline/config/toggle',
+  copyPipelineConfig = '/verto/appmanage/pipeline/config/copy',
   
   // 流水线运行历史相关
-  getPipelineHistory = '/appmanage/pipeline/history',
-  getPipelineHistoryDetail = '/appmanage/pipeline/history/detail',
-  rerunPipeline = '/appmanage/pipeline/rerun',
-  cancelPipeline = '/appmanage/pipeline/cancel',
-  getPipelineLogs = '/appmanage/pipeline/logs',
+  getPipelineHistory = '/verto/appmanage/pipeline/history',
+  getPipelineHistoryDetail = '/verto/appmanage/pipeline/history/detail',
+  rerunPipeline = '/verto/appmanage/pipeline/rerun',
+  cancelPipeline = '/verto/appmanage/pipeline/cancel',
+  getPipelineLogs = '/verto/appmanage/pipeline/logs',
 
   // Jenkins 创建流水线 Job（走 project 模块的后端）
-  createJenkinsPipeline = '/project/pipeline/jenkins/create',
+  createJenkinsPipeline = '/verto/project/pipeline/jenkins/create',
   // 新增：应用-流水线绑定相关
-  bindingList = '/appmanage/pipeline/binding/list',
-  bindingSave = '/appmanage/pipeline/binding/save',
-  bindingDelete = '/appmanage/pipeline/binding/delete',
-  bindingDetail = '/appmanage/pipeline/binding/detail',
-  bindingValidate = '/appmanage/pipeline/binding/validate',
+  bindingList = '/verto/appmanage/pipeline/binding/list',
+  bindingSave = '/verto/appmanage/pipeline/binding/save',
+  bindingDelete = '/verto/appmanage/pipeline/binding/delete',
+  bindingDetail = '/verto/appmanage/pipeline/binding/detail',
+  bindingValidate = '/verto/appmanage/pipeline/binding/validate',
   
   // 获取应用 package.json 内容
-  getPackageJson = '/appmanage/app/package-json',
+  getPackageJson = '/verto/appmanage/app/package-json',
   
   // 获取应用统计数据
-  getStatistics = '/appmanage/app/statistics',
+  getStatistics = '/verto/appmanage/app/statistics',
 
   // Git 相关（项目仓库创建与权限校验）
-  createGitRepo = '/project/git/repo/create',
-  checkGitPermission = '/project/git/permission/check',
+  createGitRepo = '/verto/project/git/repo/create',
+  checkGitPermission = '/verto/project/git/permission/check',
   // Git 仓库搜索 & 前缀查询
-  getGitRepos = '/project/git/repos',
-  getGitPrefixes = '/project/git/prefixes',
+  getGitRepos = '/verto/project/git/repos',
+  getGitPrefixes = '/verto/project/git/prefixes',
   // 同步应用的 Git 仓库详细信息并持久化
-  syncGitRepoInfo = '/appmanage/app/git/sync',
+  syncGitRepoInfo = '/verto/appmanage/app/git/sync',
   // 查询已持久化的 Git 仓库信息（不触发同步）
-  getGitRepoInfo = '/appmanage/app/git/info',
+  getGitRepoInfo = '/verto/appmanage/app/git/info',
 }
 
 /**

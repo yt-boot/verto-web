@@ -237,11 +237,11 @@ function generateId(): string {
 
 
 
-export default [
+const baseRoutes: MockMethod[] = [
   // 获取配置列表
   {
     method: 'GET',
-    url: '/jeecgboot/appmanage/config/list',
+    url: '/verto/appmanage/config/list',
     response: ({ query }) => {
       console.log('=== Mock Config List Request ===');
       console.log('Query params:', query);
@@ -284,7 +284,7 @@ export default [
   // 保存配置
   {
     method: 'POST',
-    url: '/jeecgboot/appmanage/config/save',
+    url: '/verto/appmanage/config/save',
     response: ({ body }) => {
       
       const config = body;
@@ -315,7 +315,7 @@ export default [
   // 删除配置
   {
     method: 'DELETE',
-    url: '/jeecgboot/appmanage/config/delete',
+    url: '/verto/appmanage/config/delete',
     response: ({ query }) => {
       
       const { id } = query;
@@ -331,7 +331,7 @@ export default [
   // 获取配置详情
   {
     method: 'GET',
-    url: '/jeecgboot/appmanage/config/detail',
+    url: '/verto/appmanage/config/detail',
     response: ({ query }) => {
       const { id } = query;
       const config = allConfigs.find(c => c.id === id);
@@ -343,7 +343,7 @@ export default [
   // 复制配置
   {
     method: 'POST',
-    url: '/jeecgboot/appmanage/config/copy',
+    url: '/verto/appmanage/config/copy',
     response: ({ body }) => {
       const { id } = body;
       const originalConfig = allConfigs.find(c => c.id === id);
@@ -371,7 +371,7 @@ export default [
   // 部署配置
   {
     method: 'POST',
-    url: '/jeecgboot/appmanage/config/deploy',
+    url: '/verto/appmanage/config/deploy',
     response: ({ body }) => {
       const { id } = body;
       const config = allConfigs.find(c => c.id === id);
@@ -388,7 +388,7 @@ export default [
   // 回滚配置
   {
     method: 'POST',
-    url: '/jeecgboot/appmanage/config/rollback',
+    url: '/verto/appmanage/config/rollback',
     response: ({ body }) => {
       
       const { id, version } = body;
@@ -400,7 +400,7 @@ export default [
   // 验证配置
   {
     method: 'POST',
-    url: '/jeecgboot/appmanage/config/validate',
+    url: '/verto/appmanage/config/validate',
     response: ({ body }) => {
       
       const config = body;
@@ -427,7 +427,7 @@ export default [
   // 导出配置
   {
     method: 'POST',
-    url: '/jeecgboot/appmanage/config/export',
+    url: '/verto/appmanage/config/export',
     response: ({ body }) => {
       
       const { ids } = body;
@@ -444,7 +444,7 @@ export default [
   // 导入配置
   {
     method: 'POST',
-    url: '/jeecgboot/appmanage/config/import',
+    url: '/verto/appmanage/config/import',
     response: ({ body }) => {
       
       const { configs } = body;
@@ -475,7 +475,7 @@ export default [
   // 获取配置历史
   {
     method: 'GET',
-    url: '/jeecgboot/appmanage/config/history',
+    url: '/verto/appmanage/config/history',
     response: ({ query }) => {
       
       const { id, pageNo = 1, pageSize = 10 } = query;
@@ -514,7 +514,7 @@ export default [
   // 预览配置
   {
     method: 'GET',
-    url: '/jeecgboot/appmanage/config/preview',
+    url: '/verto/appmanage/config/preview',
     response: ({ query }) => {
       
       const { id } = query;
@@ -533,4 +533,22 @@ export default [
       return resultSuccess(null);
     },
   }
-] as MockMethod[];
+];
+
+// 生成 /jeecgboot 前缀别名，以及去掉 /verto 前缀的兼容路由
+const aliasRoutes: MockMethod[] = [];
+baseRoutes.forEach((r) => {
+  const url = r.url as any;
+  if (typeof url === 'string') {
+    aliasRoutes.push({ ...r, url: '/jeecgboot' + url } as MockMethod);
+    if (url.startsWith('/verto')) {
+      const stripped = url.replace(/^\/verto/, '');
+      aliasRoutes.push({ ...r, url: stripped } as MockMethod);
+      aliasRoutes.push({ ...r, url: '/jeecgboot' + stripped } as MockMethod);
+    }
+  } else if (url instanceof RegExp) {
+    aliasRoutes.push({ ...r, url: new RegExp('/jeecgboot' + url.source) } as MockMethod);
+  }
+});
+
+export default [...baseRoutes, ...aliasRoutes] as MockMethod[];

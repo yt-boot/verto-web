@@ -19,7 +19,7 @@ export const formSchema: FormSchema[] = [
     componentProps: {
       options: [
         { label: '添加已有项目', value: 'existing' },
-        { label: '创建新项目', value: 'new' },
+        // { label: '创建新项目', value: 'new' },
       ],
     },
     defaultValue: 'existing',

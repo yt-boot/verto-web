@@ -327,12 +327,12 @@ const buildLogsData = {
   }
 };
 
-export default [
+const baseRoutes: MockMethod[] = [
   /**
    * 获取流水线配置
    */
   {
-    url: '/jeecgboot/project/pipeline/config/get',
+    url: '/verto/project/pipeline/config/get',
     method: 'get',
     response: ({ query }) => {
       const { projectId } = query;
@@ -348,7 +348,7 @@ export default [
    * 保存流水线配置
    */
   {
-    url: '/jeecgboot/project/pipeline/config/save',
+    url: '/verto/project/pipeline/config/save',
     method: 'post',
     response: ({ body }) => {
       const { projectId, config } = body;
@@ -364,7 +364,7 @@ export default [
    * 切换流水线启用状态
    */
   {
-    url: '/jeecgboot/project/pipeline/config/toggle',
+    url: '/verto/project/pipeline/config/toggle',
     method: 'post',
     response: ({ body }) => {
       const { projectId, enabled } = body;
@@ -380,7 +380,7 @@ export default [
    * 获取流水线状态
    */
   {
-    url: '/jeecgboot/project/pipeline/status',
+    url: '/verto/project/pipeline/status',
     method: 'get',
     response: ({ query }) => {
       const { projectId } = query;
@@ -396,7 +396,7 @@ export default [
    * 获取流水线历史
    */
   {
-    url: '/jeecgboot/project/pipeline/history',
+    url: '/verto/project/pipeline/history',
     method: 'get',
     response: ({ query }) => {
       const { projectId, page = 1, pageSize = 10, status, branch } = query;
@@ -431,7 +431,7 @@ export default [
    * 获取构建详情
    */
   {
-    url: /\/jeecgboot\/project\/pipeline\/build\/(.+)\/(.+)/,
+    url: /\/verto\/project\/pipeline\/build\/(.+)\/(.+)/,
     method: 'get',
     response: ({ url }) => {
       const matches = url.match(/\/jeecgboot\/project\/pipeline\/build\/(.+)\/(.+)/);
@@ -451,7 +451,7 @@ export default [
    * 删除构建记录
    */
   {
-    url: /\/jeecgboot\/project\/pipeline\/build\/delete\/(.+)\/(.+)/,
+    url: /\/verto\/project\/pipeline\/build\/delete\/(.+)\/(.+)/,
     method: 'delete',
     response: ({ url }) => {
       const matches = url.match(/\/jeecgboot\/project\/pipeline\/build\/delete\/(.+)\/(.+)/);
@@ -472,7 +472,7 @@ export default [
    * 批量删除构建记录
    */
   {
-    url: /\/jeecgboot\/project\/pipeline\/build\/batch-delete\/(.+)/,
+    url: /\/verto\/project\/pipeline\/build\/batch-delete\/(.+)/,
     method: 'delete',
     response: ({ url, body }) => {
       const matches = url.match(/\/jeecgboot\/project\/pipeline\/build\/batch-delete\/(.+)/);
@@ -498,7 +498,7 @@ export default [
    * 触发流水线
    */
   {
-    url: '/jeecgboot/project/pipeline/trigger',
+    url: '/verto/project/pipeline/trigger',
     method: 'post',
     response: ({ body }) => {
       const { projectId, environment, branch = 'main', parameters = {} } = body;
@@ -555,7 +555,7 @@ export default [
    * 取消流水线
    */
   {
-    url: /\/jeecgboot\/project\/pipeline\/cancel\/(.+)\/(.+)/,
+    url: /\/verto\/project\/pipeline\/cancel\/(.+)\/(.+)/,
     method: 'post',
     response: ({ url }) => {
       const matches = url.match(/\/jeecgboot\/project\/pipeline\/cancel\/(.+)\/(.+)/);
@@ -586,7 +586,7 @@ export default [
    * 重试构建
    */
   {
-    url: /\/jeecgboot\/project\/pipeline\/build\/retry\/(.+)\/(.+)/,
+    url: /\/verto\/project\/pipeline\/build\/retry\/(.+)\/(.+)/,
     method: 'post',
     response: ({ url }) => {
       const matches = url.match(/\/jeecgboot\/project\/pipeline\/build\/retry\/(.+)\/(.+)/);
@@ -636,7 +636,7 @@ export default [
    * 继续阶段
    */
   {
-    url: /\/jeecgboot\/project\/pipeline\/stage\/continue\/(.+)\/(.+)\/(.+)/,
+    url: /\/verto\/project\/pipeline\/stage\/continue\/(.+)\/(.+)\/(.+)/,
     method: 'post',
     response: ({ url }) => {
       const matches = url.match(/\/jeecgboot\/project\/pipeline\/stage\/continue\/(.+)\/(.+)\/(.+)/);
@@ -661,7 +661,7 @@ export default [
    * 重试阶段
    */
   {
-    url: /\/jeecgboot\/project\/pipeline\/retry\/(.+)\/(.+)\/(.+)/,
+    url: /\/verto\/project\/pipeline\/retry\/(.+)\/(.+)\/(.+)/,
     method: 'post',
     response: ({ url }) => {
       const matches = url.match(/\/jeecgboot\/project\/pipeline\/retry\/(.+)\/(.+)\/(.+)/);
@@ -687,7 +687,7 @@ export default [
    * 跳过阶段
    */
   {
-    url: /\/jeecgboot\/project\/pipeline\/skip\/(.+)\/(.+)\/(.+)/,
+    url: /\/verto\/project\/pipeline\/skip\/(.+)\/(.+)\/(.+)/,
     method: 'post',
     response: ({ url }) => {
       const matches = url.match(/\/jeecgboot\/project\/pipeline\/skip\/(.+)\/(.+)\/(.+)/);
@@ -713,7 +713,7 @@ export default [
    * 取消阶段
    */
   {
-    url: /\/jeecgboot\/project\/pipeline\/stage\/cancel\/(.+)\/(.+)\/(.+)/,
+    url: /\/verto\/project\/pipeline\/stage\/cancel\/(.+)\/(.+)\/(.+)/,
     method: 'post',
     response: ({ url }) => {
       const matches = url.match(/\/jeecgboot\/project\/pipeline\/stage\/cancel\/(.+)\/(.+)\/(.+)/);
@@ -738,7 +738,7 @@ export default [
    * 获取阶段日志
    */
   {
-    url: /\/jeecgboot\/project\/pipeline\/logs\/(.+)\/(.+)\/(.+)/,
+    url: /\/verto\/project\/pipeline\/logs\/(.+)\/(.+)\/(.+)/,
     method: 'get',
     response: ({ url, query }) => {
       const matches = url.match(/\/jeecgboot\/project\/pipeline\/logs\/(.+)\/(.+)\/(.+)/);
@@ -765,7 +765,7 @@ export default [
    * 获取构建日志
    */
   {
-    url: /\/jeecgboot\/project\/pipeline\/logs\/(.+)\/(.+)/,
+    url: /\/verto\/project\/pipeline\/logs\/(.+)\/(.+)/,
     method: 'get',
     response: ({ url, query }) => {
       const matches = url.match(/\/jeecgboot\/project\/pipeline\/logs\/(.+)\/(.+)/);
@@ -796,7 +796,7 @@ export default [
    * 下载构建日志
    */
   {
-    url: /\/jeecgboot\/project\/pipeline\/build\/logs\/download\/(.+)\/(.+)/,
+    url: /\/verto\/project\/pipeline\/build\/logs\/download\/(.+)\/(.+)/,
     method: 'get',
     response: ({ url }) => {
       const matches = url.match(/\/jeecgboot\/project\/pipeline\/build\/logs\/download\/(.+)\/(.+)/);
@@ -829,7 +829,7 @@ export default [
    * 批量下载日志
    */
   {
-    url: /\/jeecgboot\/project\/pipeline\/build\/batch-download\/(.+)/,
+    url: /\/verto\/project\/pipeline\/build\/batch-download\/(.+)/,
     method: 'post',
     response: ({ url, body }) => {
       const matches = url.match(/\/jeecgboot\/project\/pipeline\/build\/batch-download\/(.+)/);
@@ -866,4 +866,30 @@ export default [
       return resultError('项目不存在');
     },
   },
-] as MockMethod[];
+];
+
+// Alias routes to support legacy and alternative prefixes:
+// 1) /jeecgboot + original url (/jeecgboot/verto/...)
+// 2) Stripped /verto prefix equivalent (/project/pipeline/...)
+// 3) /jeecgboot + stripped variant (/jeecgboot/project/pipeline/...)
+const aliasRoutes: MockMethod[] = [];
+baseRoutes.forEach((r) => {
+  const url = r.url as any;
+  if (typeof url === 'string') {
+    // 1) /jeecgboot + original url
+    aliasRoutes.push({ ...r, url: '/jeecgboot' + url } as MockMethod);
+
+    if (url.startsWith('/verto')) {
+      const stripped = url.replace(/^\/verto/, '');
+      // 2) stripped
+      aliasRoutes.push({ ...r, url: stripped } as MockMethod);
+      // 3) /jeecgboot + stripped
+      aliasRoutes.push({ ...r, url: '/jeecgboot' + stripped } as MockMethod);
+    }
+  } else if (url instanceof RegExp) {
+    // Only support jeecgboot + original regex for now
+    aliasRoutes.push({ ...r, url: new RegExp('/jeecgboot' + url.source) } as MockMethod);
+  }
+});
+
+export default [...baseRoutes, ...aliasRoutes] as MockMethod[];

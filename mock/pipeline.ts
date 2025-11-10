@@ -574,14 +574,14 @@ const buildDetailData = {
   }
 };
 
-export default [
+const baseRoutes: MockMethod[] = [
   // ==================== 流水线管理 API ====================
   
   /**
    * 获取流水线状态
    */
   {
-    url: '/jeecgboot/project/pipeline/status',
+    url: '/verto/project/pipeline/status',
     timeout: 200,
     method: 'get',
     response: ({ query }) => {
@@ -598,7 +598,7 @@ export default [
    * 触发流水线
    */
   {
-    url: '/jeecgboot/project/pipeline/trigger',
+    url: '/verto/project/pipeline/trigger',
     timeout: 200,
     method: 'post',
     response: ({ body }) => {
@@ -619,7 +619,7 @@ export default [
    * 停止流水线
    */
   {
-    url: '/jeecgboot/project/pipeline/stop',
+    url: '/verto/project/pipeline/stop',
     timeout: 200,
     method: 'post',
     response: ({ body }) => {
@@ -637,7 +637,7 @@ export default [
    * 获取流水线日志
    */
   {
-    url: '/jeecgboot/project/pipeline/logs',
+    url: '/verto/project/pipeline/logs',
     timeout: 200,
     method: 'get',
     response: ({ query }) => {
@@ -654,7 +654,7 @@ export default [
    * 获取流水线历史
    */
   {
-    url: '/jeecgboot/project/pipeline/history',
+    url: '/verto/project/pipeline/history',
     timeout: 200,
     method: 'get',
     response: ({ query }) => {
@@ -679,7 +679,7 @@ export default [
    * 获取流水线配置
    */
   {
-    url: '/jeecgboot/project/pipeline/config/get',
+    url: '/verto/project/pipeline/config/get',
     timeout: 200,
     method: 'get',
     response: ({ query }) => {
@@ -696,7 +696,7 @@ export default [
    * 保存流水线配置
    */
   {
-    url: '/jeecgboot/project/pipeline/config/save',
+    url: '/verto/project/pipeline/config/save',
     timeout: 200,
     method: 'post',
     response: ({ body }) => {
@@ -714,7 +714,7 @@ export default [
    * 切换流水线启用状态
    */
   {
-    url: '/jeecgboot/project/pipeline/config/toggle',
+    url: '/verto/project/pipeline/config/toggle',
     timeout: 200,
     method: 'post',
     response: ({ body }) => {
@@ -732,7 +732,7 @@ export default [
    * 重试流水线阶段
    */
   {
-    url: '/jeecgboot/project/pipeline/retry',
+    url: '/verto/project/pipeline/retry',
     timeout: 200,
     method: 'post',
     response: ({ body }) => {
@@ -750,7 +750,7 @@ export default [
    * 跳过流水线阶段
    */
   {
-    url: '/jeecgboot/project/pipeline/skip',
+    url: '/verto/project/pipeline/skip',
     timeout: 200,
     method: 'post',
     response: ({ body }) => {
@@ -767,7 +767,7 @@ export default [
    * 部署流水线
    */
   {
-    url: '/jeecgboot/project/pipeline/deploy',
+    url: '/verto/project/pipeline/deploy',
     timeout: 200,
     method: 'post',
     response: ({ body }) => {
@@ -789,7 +789,7 @@ export default [
    * 获取构建详情
    */
   {
-    url: '/jeecgboot/project/pipeline/build/:projectId/:buildId',
+    url: '/verto/project/pipeline/build/:projectId/:buildId',
     timeout: 200,
     method: 'get',
     response: ({ url }) => {
@@ -812,7 +812,7 @@ export default [
    * 重试构建
    */
   {
-    url: '/jeecgboot/project/pipeline/build/retry/:projectId/:buildId',
+    url: '/verto/project/pipeline/build/retry/:projectId/:buildId',
     timeout: 1000,
     method: 'post',
     response: ({ url }) => {
@@ -842,7 +842,7 @@ export default [
    * 下载构建日志
    */
   {
-    url: '/jeecgboot/project/pipeline/build/logs/download/:projectId/:buildId',
+    url: '/verto/project/pipeline/build/logs/download/:projectId/:buildId',
     timeout: 500,
     method: 'get',
     response: ({ url }) => {
@@ -889,7 +889,7 @@ export default [
    * 批量下载构建日志
    */
   {
-    url: '/jeecgboot/project/pipeline/build/batch-download/:projectId',
+    url: '/verto/project/pipeline/build/batch-download/:projectId',
     timeout: 1000,
     method: 'post',
     response: ({ url, body }) => {
@@ -922,7 +922,7 @@ export default [
    * 对比构建
    */
   {
-    url: '/jeecgboot/project/pipeline/build/compare',
+    url: '/verto/project/pipeline/build/compare',
     timeout: 800,
     method: 'post',
     response: ({ body }) => {
@@ -1008,7 +1008,7 @@ export default [
    * 删除构建记录
    */
   {
-    url: '/jeecgboot/project/pipeline/build/:projectId/:buildId',
+    url: '/verto/project/pipeline/build/:projectId/:buildId',
     timeout: 500,
     method: 'delete',
     response: ({ url }) => {
@@ -1036,7 +1036,7 @@ export default [
    * 批量删除构建记录
    */
   {
-    url: '/jeecgboot/project/pipeline/build/batch-delete/:projectId',
+    url: '/verto/project/pipeline/build/batch-delete/:projectId',
     timeout: 800,
     method: 'delete',
     response: ({ url, body }) => {
@@ -1062,4 +1062,18 @@ export default [
       });
     }
   }
-] as MockMethod[];
+];
+
+// 生成 /jeecgboot 前缀别名，以及剥离 /verto 的兼容路由（仅对 /verto 路由）
+const aliasRoutes: MockMethod[] = [];
+baseRoutes.forEach((r) => {
+  const url = r.url as any;
+  if (typeof url === 'string' && url.startsWith('/verto')) {
+    const stripped = url.replace(/^\/verto/, '');
+    aliasRoutes.push({ ...r, url: '/jeecgboot' + url } as MockMethod);
+    aliasRoutes.push({ ...r, url: stripped } as MockMethod);
+    aliasRoutes.push({ ...r, url: '/jeecgboot' + stripped } as MockMethod);
+  }
+});
+
+export default [...baseRoutes, ...aliasRoutes] as MockMethod[];

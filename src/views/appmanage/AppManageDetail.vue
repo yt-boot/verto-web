@@ -1,81 +1,45 @@
 <!--应用管理详情页面-->
 <template>
-  <div class="app-detail">
-    <!-- 页面头部 -->
-    <div class="detail-header">
-      <a-button type="link" @click="goBack" class="back-btn">
-        <Icon icon="ant-design:arrow-left-outlined" size="16" />
-        返回列表
-      </a-button>
+  <BasicModal
+    @register="registerDetailModal"
+    :title="appDetail?.appName || '应用详情'"
+    :defaultFullscreen="true"
+    :canFullscreen="false"
+    :maskClosable="false"
+    :closable="true"
+    :draggable="false"
+    :footer="null"
+    class="app-manage-detail-modal"
+  >
+    <div class="app-detail">
+
+      <!-- 加载状态 -->
+      <div v-if="loading" class="loading-container">
+        <a-spin size="large" />
+      </div>
+
+      <!-- 详情内容 -->
+      <div v-else-if="appDetail" class="detail-content">
+
+        <!-- Tab页面内容 -->
+        <a-card class="tab-container">
+          <a-tabs v-model:activeKey="activeTabKey" type="card" @change="handleTabChange">
+            <a-tab-pane v-for="tab in tabList" :key="tab.key" :tab="tab.name">
+              <component :is="tab.component" :app-detail="appDetail" :app-id="appDetail.id" @switchToConfig="handleSwitchToConfig" />
+            </a-tab-pane>
+          </a-tabs>
+        </a-card>
+      </div>
+
+      <!-- 数据不存在 -->
+      <div v-else class="no-data">
+        <a-empty description="应用不存在或已被删除" />
+      </div>
+
+      <!-- 编辑抽屉 -->
+      <AppManageModal @register="registerDrawer" @success="handleSuccess"></AppManageModal>
     </div>
-
-    <!-- 加载状态 -->
-    <div v-if="loading" class="loading-container">
-      <a-spin size="large" />
-    </div>
-
-    <!-- 详情内容 -->
-    <div v-else-if="appDetail" class="detail-content">
-      <!-- 应用基本信息概览 -->
-      <a-card class="app-overview-card">
-        <div class="app-overview">
-          <div class="app-avatar">
-            <a-avatar :size="64" :src="appDetail.avatar">
-              {{ appDetail.appName?.charAt(0) }}
-            </a-avatar>
-          </div>
-          <div class="app-info">
-            <h2 class="app-title">{{ appDetail.appName }}</h2>
-            <p class="app-desc">{{ appDetail.appDescription || '暂无描述' }}</p>
-            <div class="app-tags">
-              <a-tag color="blue">{{ appDetail.domain_dictText || '未分类' }}</a-tag>
-              <a-tag color="green">{{ appDetail.status === '1' ? '运行中' : '已停用' }}</a-tag>
-            </div>
-          </div>
-          <div class="app-stats">
-            <div class="stat-item">
-              <div class="stat-value">{{ projectCount }}</div>
-              <div class="stat-label">项目数量</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value">{{ commitCount }}</div>
-              <div class="stat-label">代码提交</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value">{{ deployCount }}</div>
-              <div class="stat-label">部署次数</div>
-            </div>
-          </div>
-        </div>
-      </a-card>
-
-      <!-- Tab页面内容 -->
-      <a-card class="tab-container">
-        <a-tabs v-model:activeKey="activeTabKey" type="card" @change="handleTabChange">
-          <a-tab-pane
-            v-for="tab in tabList"
-            :key="tab.key"
-            :tab="tab.name"
-          >
-            <component
-              :is="tab.component"
-              :app-detail="appDetail"
-              :app-id="appDetail.id"
-              @switchToConfig="handleSwitchToConfig"
-            />
-          </a-tab-pane>
-        </a-tabs>
-      </a-card>
-    </div>
-
-    <!-- 数据不存在 -->
-    <div v-else class="no-data">
-      <a-empty description="应用不存在或已被删除" />
-    </div>
-
-    <!-- 编辑抽屉 -->
-    <AppManageModal @register="registerDrawer" @success="handleSuccess"></AppManageModal>
-  </div>
+  </BasicModal>
 </template>
 
 <script lang="ts">
@@ -84,6 +48,7 @@
   import { Card, Button, Row, Col, Spin, Tag, message, Tabs, TabPane, Avatar } from 'ant-design-vue';
   import Icon from '/@/components/Icon';
   import { useDrawer } from '/@/components/Drawer';
+  import { BasicModal, useModal } from '/@/components/Modal';
   import { useClipboard } from '@vueuse/core';
   import { formatToDateTime } from '/@/utils/dateUtil';
   import { getAppById, deleteApp, getAppStatistics } from './AppManage.api';
@@ -96,6 +61,7 @@
 
   export default defineComponent({
     name: 'AppManageDetail',
+    emits: ['closed'],
     components: {
       ACard: Card,
       AButton: Button,
@@ -107,18 +73,26 @@
       ATabPane: TabPane,
       AAvatar: Avatar,
       Icon,
+      BasicModal,
       AppManageModal,
       BasicInfo,
       // ProjectList,
       AppConfig,
       Statistics,
     },
-    setup() {
+    props: {
+      // 当不通过路由展示时，可以直接传入 appId
+      appId: { type: String, default: '' },
+    },
+    setup(props, { emit }) {
       const route = useRoute();
       const router = useRouter();
 
       // 抽屉
       const [registerDrawer, { openDrawer }] = useDrawer();
+
+      // 详情全屏弹窗
+      const [registerDetailModal, { openModal, closeModal }] = useModal();
 
       // 剪贴板
       const { copy, copied: copiedRef } = useClipboard();
@@ -128,7 +102,7 @@
       const loading = ref(false);
       const appDetail = ref<any>(null);
       const activeTabKey = ref('basic');
-      
+
       // 统计数据
       const projectCount = ref(12);
       const commitCount = ref(1234);
@@ -138,7 +112,7 @@
        * 加载应用详情
        */
       const loadAppDetail = async () => {
-        const appId = route.params.id as string;
+        const appId = (route.params.id as string) || props.appId;
         if (!appId) {
           message.error('应用ID不能为空');
           return;
@@ -164,7 +138,7 @@
        * 加载应用统计数据
        */
       const loadAppStatistics = async () => {
-        const appId = route.params.id as string;
+        const appId = (route.params.id as string) || props.appId;
         if (!appId) {
           return;
         }
@@ -190,7 +164,15 @@
        */
       const goBack = () => {
         console.log('goBack 方法被调用');
-        router.push('/appmanage/list');
+        // 关闭全屏详情弹窗
+        closeModal();
+        // 通知父组件已关闭，用于卸载组件
+        emit('closed');
+        // 如果当前是通过详情路由打开，则回到列表页
+        const path = router.currentRoute.value?.path || '';
+        if (path.includes('/appmanage/detail') || path.includes('/appmanage/view')) {
+          router.push('/appmanage');
+        }
       };
 
       /**
@@ -273,6 +255,8 @@
 
       // 组件挂载时加载数据
       onMounted(() => {
+        // 默认以全屏Modal打开详情
+        openModal(true);
         loadAppDetail();
         loadAppStatistics();
       });
@@ -286,6 +270,9 @@
         commitCount,
         deployCount,
         registerDrawer,
+        registerDetailModal,
+        openModal,
+        closeModal,
         goBack,
         handleEdit,
         handleDelete,
@@ -440,7 +427,7 @@
 
         :deep(.ant-card-head) {
           border-bottom: 1px solid #f0f0f0;
-          
+
           .ant-card-head-title {
             font-size: 18px;
             font-weight: 600;

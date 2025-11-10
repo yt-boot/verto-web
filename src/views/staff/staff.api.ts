@@ -5,26 +5,26 @@ import { Modal } from 'ant-design-vue';
  * 人员管理API枚举
  */
 enum Api {
-  list = '/staff/list',
-  save = '/staff/add',
-  edit = '/staff/edit',
-  deleteStaff = '/staff/delete',
-  deleteBatch = '/staff/deleteBatch',
-  importExcel = '/staff/importExcel',
-  exportXls = '/staff/exportXls',
+  list = '/verto/staff/list',
+  save = '/verto/staff/add',
+  edit = '/verto/staff/edit',
+  deleteStaff = '/verto/staff/delete',
+  deleteBatch = '/verto/staff/deleteBatch',
+  importExcel = '/verto/staff/importExcel',
+  exportXls = '/verto/staff/exportXls',
   duplicateCheck = '/sys/duplicate/check',
-  getStaffById = '/staff/queryById',
+  getStaffById = '/verto/staff/queryById',
   getSkillDict = '/sys/dict/getDictItems/staff_skills',
-  skillsStats = '/staff/skillsStats',
-  departmentStats = '/staff/departmentStats',
-  checkEmployeeNo = '/staff/checkEmployeeNo',
-  checkEmail = '/staff/checkEmail',
+  skillsStats = '/verto/staff/skillsStats',
+  departmentStats = '/verto/staff/departmentStats',
+  checkEmployeeNo = '/verto/staff/checkEmployeeNo',
+  checkEmail = '/verto/staff/checkEmail',
   // 积分相关
-  pointsSummary = '/staff/points/summary',
-  pointsLogs = '/staff/points/logs',
-  pointsLogsAll = '/staff/points/logs/all',
+  pointsSummary = '/verto/staff/points/summary',
+  pointsLogs = '/verto/staff/points/logs',
+  pointsLogsAll = '/verto/staff/points/logs/all',
   // 可选：手动加分接口（用于测试或管理员操作）
-  pointsAdjust = '/staff/points/adjust',
+  pointsAdjust = '/verto/staff/points/adjust',
 }
 
 /**

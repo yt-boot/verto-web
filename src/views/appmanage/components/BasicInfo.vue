@@ -47,6 +47,16 @@
             <a-descriptions-item label="版本号">
               {{ appInfo.version || '暂无数据' }}
             </a-descriptions-item>
+            <a-descriptions-item label="Git仓库地址">
+              <template v-if="appInfo.gitInfo && appInfo.gitInfo.repoUrl">
+                <a :href="appInfo.gitInfo.repoUrl" target="_blank">
+                  {{ appInfo.gitInfo.repoUrl }}
+                </a>
+              </template>
+              <template v-else>
+                暂无数据
+              </template>
+            </a-descriptions-item>
             <a-descriptions-item label="技术栈" :span="2">
               <template v-if="appInfo.techStack && appInfo.techStack.length">
                 <div class="tech-stack-tags">
@@ -80,55 +90,6 @@
         </a-card>
       </a-col>
     </a-row>
-
-      <!-- Git 仓库信息 -->
-      <a-row :gutter="24" class="mt-4">
-        <a-col :span="24">
-          <a-card title="Git仓库信息" :bordered="false">
-            <template #extra>
-              <a-button :loading="syncLoading" type="primary" size="small" @click="syncGitInfo">
-                <Icon icon="ant-design:sync-outlined" :size="16" />
-                同步
-              </a-button>
-            </template>
-            <a-row :gutter="16">
-              <a-col :span="12">
-                <a-descriptions :column="1" bordered>
-                  <a-descriptions-item label="仓库地址">
-                    <template v-if="appInfo.gitInfo && appInfo.gitInfo.repoUrl">
-                      <a :href="appInfo.gitInfo.repoUrl" target="_blank">
-                        {{ appInfo.gitInfo.repoUrl }}
-                      </a>
-                    </template>
-                    <template v-else>
-                      暂无数据
-                    </template>
-                  </a-descriptions-item>
-                  <a-descriptions-item label="默认分支">
-                    {{ (appInfo.gitInfo && appInfo.gitInfo.defaultBranch) || '暂无数据' }}
-                  </a-descriptions-item>
-                  <a-descriptions-item label="最后提交">
-                    {{ (appInfo.gitInfo && appInfo.gitInfo.lastCommitSha) || '暂无数据' }}
-                  </a-descriptions-item>
-                </a-descriptions>
-              </a-col>
-              <a-col :span="12">
-                <a-descriptions :column="1" bordered>
-                  <a-descriptions-item label="提交者">
-                    {{ (appInfo.gitInfo && appInfo.gitInfo.lastCommitter) || '暂无数据' }}
-                  </a-descriptions-item>
-                  <a-descriptions-item label="提交时间">
-                    {{ (appInfo.gitInfo && appInfo.gitInfo.lastCommitTime) || '暂无数据' }}
-                  </a-descriptions-item>
-                  <a-descriptions-item label="分支数量">
-                    {{ (appInfo.gitInfo && appInfo.gitInfo.branchCount) || '暂无数据' }}
-                  </a-descriptions-item>
-                </a-descriptions>
-              </a-col>
-            </a-row>
-          </a-card>
-        </a-col>
-      </a-row>
 
       <!-- 依赖信息（暂不展示） -->
       <a-row v-if="showDependencies" :gutter="24" class="mt-4">

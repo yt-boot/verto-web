@@ -279,12 +279,12 @@ const packageJsonData = {
   }
 };
 
-export default [
+const baseRoutes: MockMethod[] = [
   /**
    * 获取应用列表
    */
   {
-    url: '/jeecgboot/appmanage/app/list',
+    url: '/verto/appmanage/app/list',
     method: 'get',
     response: ({ query }) => {
       const { pageNo = 1, pageSize = 10, appName, domain } = query;
@@ -315,7 +315,7 @@ export default [
    * 根据ID查询应用详情
    */
   {
-    url: '/jeecgboot/appmanage/app/queryById',
+    url: '/verto/appmanage/app/queryById',
     method: 'get',
     response: ({ query }) => {
       const { id } = query;
@@ -328,7 +328,7 @@ export default [
    * 新增/编辑应用
    */
   {
-    url: '/jeecgboot/appmanage/app/edit',
+    url: '/verto/appmanage/app/edit',
     method: 'put',
     response: ({ body }) => {
       const data = body;
@@ -359,7 +359,7 @@ export default [
    * 删除应用
    */
   {
-    url: '/jeecgboot/appmanage/app/delete',
+    url: '/verto/appmanage/app/delete',
     method: 'delete',
     response: ({ query }) => {
       const { id } = query;
@@ -375,7 +375,7 @@ export default [
    * 批量删除应用
    */
   {
-    url: '/jeecgboot/appmanage/app/deleteBatch',
+    url: '/verto/appmanage/app/deleteBatch',
     method: 'delete',
     response: ({ body }) => {
       const { ids } = body;
@@ -393,7 +393,7 @@ export default [
    * 获取用户列表（用于负责人选择）
    */
   {
-    url: '/jeecgboot/sys/user/list',
+    url: '/sys/user/list',
     method: 'get',
     response: () => {
       return resultSuccess(userList);
@@ -404,7 +404,7 @@ export default [
    * 获取领域字典
    */
   {
-    url: '/jeecgboot/sys/dict/getDictItems/app_domain',
+    url: '/sys/dict/getDictItems/app_domain',
     method: 'get',
     response: () => {
       return resultSuccess(domainDict);
@@ -415,7 +415,7 @@ export default [
    * 获取应用的 package.json 内容
    */
   {
-    url: '/jeecgboot/appmanage/app/package-json',
+    url: '/verto/appmanage/app/package-json',
     method: 'get',
     response: ({ query }) => {
       const { appId } = query;
@@ -434,4 +434,18 @@ export default [
       }
     },
   },
-] as MockMethod[];
+];
+
+// 仅对以 /verto 开头的路由生成别名：/jeecgboot + url 以及剥离 /verto 的兼容路由
+const aliasRoutes: MockMethod[] = [];
+baseRoutes.forEach((r) => {
+  const url = r.url as any;
+  if (typeof url === 'string' && url.startsWith('/verto')) {
+    const stripped = url.replace(/^\/verto/, '');
+    aliasRoutes.push({ ...r, url: '/jeecgboot' + url } as MockMethod);
+    aliasRoutes.push({ ...r, url: stripped } as MockMethod);
+    aliasRoutes.push({ ...r, url: '/jeecgboot' + stripped } as MockMethod);
+  }
+});
+
+export default [...baseRoutes, ...aliasRoutes] as MockMethod[];
