@@ -11,6 +11,7 @@
   import { useMessage } from '/@/hooks/web/useMessage';
   import { saveOrUpdateStaff } from './staff.api';
   import { formSchema, StaffModel } from './staff.data';
+  import dayjs from 'dayjs';
 
   // 定义组件事件
   const emit = defineEmits(['success', 'register']);
@@ -37,9 +38,22 @@
 
     if (unref(isUpdate)) {
       rowId.value = data.record.id;
-      setFieldsValue({
-        ...data.record,
-      });
+      const normalized: StaffModel = {
+        ...(data.record as StaffModel),
+        skills: Array.isArray(data.record?.skills)
+          ? (data.record.skills as any)
+          : (() => {
+              try {
+                const arr = JSON.parse((data.record as any)?.skills ?? '[]');
+                return Array.isArray(arr) ? arr : [];
+              } catch (e) {
+                const s = (data.record as any)?.skills;
+                return typeof s === 'string' ? s.split(',').map((x: string) => x.trim()).filter(Boolean) : [];
+              }
+            })(),
+        hireDate: data.record?.hireDate ? dayjs(data.record.hireDate as any).format('YYYY-MM-DD') : undefined,
+      } as any;
+      setFieldsValue(normalized as any);
     }
   });
 
@@ -59,7 +73,13 @@
       setModalProps({ confirmLoading: true });
 
       // 调用API保存数据
-      await saveOrUpdateStaff(values, unref(isUpdate));
+      const payload = {
+        ...(values as any),
+        skills: Array.isArray((values as any)?.skills)
+          ? JSON.stringify((values as any).skills)
+          : (values as any)?.skills ?? '[]',
+      };
+      await saveOrUpdateStaff(payload, unref(isUpdate));
       
       createMessage.success(`${unref(isUpdate) ? '编辑' : '新增'}成功！`);
       closeModal();

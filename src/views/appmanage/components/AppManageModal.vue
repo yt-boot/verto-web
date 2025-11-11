@@ -17,21 +17,16 @@
           v-model:value="model[field]" 
           placeholder="请选择应用负责人"
           :mode="'multiple'"
-          :labelInValue="true"
           :rowKey="'id'"
           :labelKey="'name'"
         />
       </template>
       <!-- 现有项目：Git地址下拉（可搜索） -->
       <template #gitUrl="{ model, field }">
-        <a-select
+        <a-input
           v-model:value="model[field]"
-          :options="gitUrlOptions"
-          show-search
-          :filter-option="false"
           allow-clear
-          placeholder="请选择或搜索已有仓库"
-          @search="onGitSearch"
+          placeholder="请输入Git地址"
           style="width: 100%"
         />
       </template>
@@ -97,8 +92,26 @@
 
         if (unref(isUpdate)) {
           rowId.value = data.record.id;
+          // 等待表单渲染完成再进行字段回填，避免未挂载导致回显失败
+          try { const { nextTick } = await import('vue'); await nextTick(); } catch {}
+          // 负责人字段预处理：支持数组、逗号分隔字符串、JSON字符串
+          const normalizeManagers = (val: any): string[] => {
+            if (Array.isArray(val)) return (val || []).map((v) => String(v)).filter(Boolean);
+            if (typeof val === 'string') {
+              const s = val.trim();
+              if (!s) return [];
+              try {
+                const arr = JSON.parse(s);
+                if (Array.isArray(arr)) return arr.map((v) => String(v)).filter(Boolean);
+              } catch {}
+              return s.split(',').map((v) => v.trim()).filter(Boolean);
+            }
+            return [];
+          };
+
           setFieldsValue({
             ...data.record,
+            managers: normalizeManagers(data?.record?.managers),
           });
 
           // 编辑模式：不显示“项目来源”，且显示“已有项目”相关字段，隐藏“新建项目”相关字段
@@ -124,6 +137,9 @@
             { field: 'gitUrlNew', show: true },
             { field: 'templateType', show: true },
           ]);
+
+          // 等待表单渲染完成后再进行 schema 更新，避免“form instance 未获取”的报错
+          try { const { nextTick } = await import('vue'); await nextTick(); } catch {}
 
           // 监听项目类型与项目名称变化，自动生成 Git 地址（仅在新建时）
           updateSchema?.([
@@ -183,22 +199,8 @@
         return (option?.label ?? '').toLowerCase().includes((input ?? '').toLowerCase());
       }
 
-      // 监听项目类型与项目名称变化，自动生成 Git 地址（仅在新建时）
-      updateSchema?.([
-        {
-          field: 'appPath',
-          componentProps: {
-            onChange: () => handleAutoGenGitUrl(),
-          },
-        },
-        {
-          field: 'repoName',
-          componentProps: {
-            onInput: () => handleAutoGenGitUrl(),
-            onChange: () => handleAutoGenGitUrl(),
-          },
-        },
-      ]);
+      // 注意：不要在组件 setup 阶段调用 updateSchema（此时表单实例尚未注册），
+      // 对 schema 的动态更新已在抽屉打开后（useDrawerInner 回调中）处理。
 
       function handleAutoGenGitUrl() {
         const values: any = getFieldsValue?.() || {};
@@ -230,6 +232,12 @@
           const submitData: Partial<AppManageModel> = {
             ...values,
           };
+
+          // 负责人字段提交转换：统一为逗号分隔字符串
+          const mVal: any = values?.managers;
+          submitData.managers = Array.isArray(mVal)
+            ? (mVal as any[]).map((v) => String(v)).filter(Boolean).join(',')
+            : (typeof mVal === 'string' ? mVal : '');
 
           if (unref(isUpdate)) {
             submitData.id = rowId.value;

@@ -395,14 +395,23 @@ export const saveBinding = (data: any) => {
 };
 
 export const deleteBinding = (id: string) => {
-  return Modal.confirm({
-    title: '确认删除',
-    content: '是否删除该绑定？',
-    okText: '确认',
-    cancelText: '取消',
-    onOk: () => {
-      return defHttp.delete({ url: Api.bindingDelete, params: { id } }, { joinParamsToUrl: true });
-    },
+  // 将确认弹框改为返回 Promise，在点击“确认”并完成删除后再 resolve，确保调用方的 await 顺序生效
+  return new Promise<void>((resolve, reject) => {
+    Modal.confirm({
+      title: '确认删除',
+      content: '是否删除该绑定？',
+      okText: '确认',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await defHttp.delete({ url: Api.bindingDelete, params: { id } }, { joinParamsToUrl: true });
+          resolve();
+        } catch (e) {
+          reject(e);
+        }
+      },
+      onCancel: () => resolve(),
+    });
   });
 };
 

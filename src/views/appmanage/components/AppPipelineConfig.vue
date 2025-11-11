@@ -26,45 +26,38 @@
 
     <a-divider />
 
-    <!-- 已绑定的 Jenkins 流水线列表（简化版，无 Tab） -->
+    <!-- 已绑定的 Jenkins 流水线（表格展示） -->
     <div class="jenkins-bind-list">
-      <a-list :data-source="bindings" item-layout="horizontal">
-        <template #renderItem="{ item }">
-          <a-list-item>
-            <template #actions>
-              <a @click="editBinding(item)">编辑绑定</a>
-              <a @click="removeBinding(item)" style="color: #ff4d4f">删除绑定</a>
+      <a-table
+        :columns="bindingColumns"
+        :data-source="bindings"
+        :pagination="false"
+        rowKey="id"
+        :locale="{ emptyText: '暂无绑定的 Jenkins 流水线，请点击右上角“绑定流水线”进行配置' }"
+      >
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'jobName'">
+            <a-space>
+              <a-avatar size="small" style="background-color: #722ed1">
+                <template #icon><BranchesOutlined /></template>
+              </a-avatar>
+              <span class="job-name">{{ record.jobName }}</span>
+            </a-space>
+          </template>
+          <template v-else-if="column.key === 'jobUrl'">
+            <template v-if="record.jobUrl">
+              <a :href="record.jobUrl" target="_blank">{{ record.jobUrl }}</a>
             </template>
-            <a-list-item-meta>
-              <template #avatar>
-                <a-avatar style="background-color: #722ed1">
-                  <template #icon><BranchesOutlined /></template>
-                </a-avatar>
-              </template>
-              <template #title>
-                <div class="binding-title">
-                  <span class="job-name">{{ item.jobName }}</span>
-                </div>
-              </template>
-              <template #description>
-                <div class="binding-desc">
-                  <div>备注: {{ item.remark || '-' }}</div>
-                  <div>
-                    链接:
-                    <template v-if="item.jobUrl">
-                      <a :href="item.jobUrl" target="_blank">{{ item.jobUrl }}</a>
-                    </template>
-                    <template v-else> 无链接 </template>
-                  </div>
-                </div>
-              </template>
-            </a-list-item-meta>
-          </a-list-item>
+            <template v-else>无链接</template>
+          </template>
+          <template v-else-if="column.key === 'actions'">
+            <a-space>
+              <a @click="editBinding(record)">编辑绑定</a>
+              <a @click="removeBinding(record)" style="color: #ff4d4f">删除绑定</a>
+            </a-space>
+          </template>
         </template>
-      </a-list>
-      <div v-if="!bindings.length" style="text-align: center; color: #888; padding: 16px 0">
-        暂无绑定的 Jenkins 流水线，请点击右上角“绑定流水线”进行配置
-      </div>
+      </a-table>
     </div>
 
     <!-- 新增：绑定 Jenkins 流水线抽屉 -->
@@ -163,6 +156,15 @@
   // 绑定列表
   const bindings = ref<any[]>([]);
 
+  // 表格列定义
+  const bindingColumns = [
+    { title: '作业名', dataIndex: 'jobName', key: 'jobName' },
+    { title: '环境', dataIndex: 'environment', key: 'environment', width: 120 },
+    { title: '链接', dataIndex: 'jobUrl', key: 'jobUrl' },
+    { title: '备注', dataIndex: 'remark', key: 'remark' },
+    { title: '操作', key: 'actions', width: 160 },
+  ];
+
   // 可选下拉的选中值（不入库，仅用于回填）
   // 移除“从已有配置复制”等复杂逻辑
 
@@ -230,17 +232,8 @@
   async function loadBindings() {
     try {
       const resp: any = await listBindings({ appId: props.appId });
-      const list = Array.isArray(resp)
-        ? resp
-        : Array.isArray(resp?.result)
-          ? resp.result
-          : Array.isArray(resp?.records)
-            ? resp.records
-            : Array.isArray(resp?.data)
-              ? resp.data
-              : Array.isArray(resp?.items)
-                ? resp.items
-                : [];
+      console.log(resp, 'resp----');
+      const list = resp?.result?.records || [];
       bindings.value = (list || []).map((b: any) => ({
         id: b.id || b.bindingId || b.key || '',
         jobName: b.jobName || b.name || '-',
@@ -311,8 +304,8 @@
   async function removeBinding(item: any) {
     try {
       await deleteBinding(item.id);
-      message.success('已删除绑定');
-      await loadBindings();
+      // message.success('已删除绑定');
+      await  loadBindings();
     } catch (e) {
       console.error(e);
       message.error('删除绑定失败');
@@ -517,7 +510,7 @@
   async function handleRefresh() {
     try {
       loading.value = true;
-      await Promise.all([loadBindings(), loadPipelineHistory()]);
+      await Promise.all([loadBindings()]);
       message.success('已刷新');
     } catch (e) {
       console.error(e);

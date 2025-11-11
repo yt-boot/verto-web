@@ -58,7 +58,7 @@ export const formSchema: FormSchema[] = [
       return values?.projectSource === 'existing'
     },
     componentProps: {
-      placeholder: '请选择或搜索已有仓库',
+      placeholder: '请输入Git地址',
     },
   },
   {

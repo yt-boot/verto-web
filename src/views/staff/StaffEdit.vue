@@ -27,6 +27,7 @@
   import { useMessage } from '/@/hooks/web/useMessage';
   import { formSchema } from './staff.data';
   import { getStaffById, updateStaff } from './staff.api';
+  import dayjs from 'dayjs';
 
   const route = useRoute();
   const router = useRouter();
@@ -51,7 +52,25 @@
     try {
       const id = route.params.id as string;
       const result = await getStaffById(id);
-      await setFieldsValue(result);
+      // 规范化后端数据，确保与表单组件类型匹配
+      const normalized = {
+        ...result,
+        // skills 后端为字符串（JSON），前端 Select(tags) 需要数组
+        skills: Array.isArray(result?.skills)
+          ? result.skills
+          : (() => {
+              try {
+                const arr = JSON.parse(result?.skills ?? '[]');
+                return Array.isArray(arr) ? arr : [];
+              } catch (e) {
+                const s = result?.skills as any;
+                return typeof s === 'string' ? s.split(',').map((x) => x.trim()).filter(Boolean) : [];
+              }
+            })(),
+        // 入职时间为字符串或日期，统一为 YYYY-MM-DD
+        hireDate: result?.hireDate ? dayjs(result.hireDate).format('YYYY-MM-DD') : undefined,
+      };
+      await setFieldsValue(normalized);
     } catch (error) {
       createMessage.error('获取人员信息失败');
     }

@@ -1,7 +1,6 @@
 <template>
   <div class="project-detail">
-
-    <PageWrapper dense contentFullHeight fixedHeight  contentClass="flex content-white">
+    <PageWrapper dense contentFullHeight fixedHeight contentClass="flex content-white">
       <template #headerContent>
         <div class="project-header">
           <div class="project-title">
@@ -31,7 +30,7 @@
               <a-descriptions-item label="需求/BUG ID">
                 {{ projectData?.requirementId || projectData?.bugId || '-' }}
               </a-descriptions-item>
-          
+
               <a-descriptions-item label="项目描述" :span="2">
                 {{ projectData?.description || '-' }}
               </a-descriptions-item>
@@ -41,11 +40,11 @@
               <a-descriptions-item label="开发人员">
                 {{ projectData?.developerName || '-' }}
               </a-descriptions-item>
-              
+
               <a-descriptions-item label="Git分支">
                 {{ projectData?.gitBranch || '-' }}
               </a-descriptions-item>
-              
+
               <!-- 展示绑定的应用流水线链接 -->
               <a-descriptions-item label="绑定流水线" :span="2">
                 <div v-if="boundPipeline">
@@ -54,39 +53,32 @@
                     <a :href="boundPipeline.jobUrl" target="_blank">{{ boundPipeline.jobName }}</a>
                     <span v-if="boundPipeline.environment">（{{ boundPipeline.environment }}）</span>
                   </div>
-                  <div v-if="boundPipeline.remark" style="margin-top: 8px; color: #999;">备注：{{ boundPipeline.remark }}</div>
+                  <div v-if="boundPipeline.remark" style="margin-top: 8px; color: #999">备注：{{ boundPipeline.remark }}</div>
                 </div>
                 <div v-else>暂无绑定流水线</div>
               </a-descriptions-item>
-              
             </a-descriptions>
           </div>
         </a-tab-pane>
 
-        
-
         <!-- 流水线 -->
-        <a-tab-pane key="pipeline" tab="流水线" v-if="!props.hidePipelineTab">
+        <!-- 仅保留新建发布与流水线历史，由 PipelineManager 统一承载 -->
+
+        <!-- <a-tab-pane key="pipeline" tab="流水线" v-if="!props.hidePipelineTab">
           <div class="tab-content">
             <div class="pipeline-manager">
-              <!-- 仅保留新建发布与流水线历史，由 PipelineManager 统一承载 -->
               <PipelineManager :project-id="projectId" :app-id="projectData?.relatedAppId" />
             </div>
           </div>
-        </a-tab-pane>
+        </a-tab-pane> -->
       </a-tabs>
     </PageWrapper>
-    
+
     <!-- 项目编辑模态框 -->
     <ProjectModal @register="registerModal" @success="handleEditSuccess" />
-    
+
     <!-- Git分支创建结果模态框 -->
-    <BasicModal
-      v-model:visible="gitBranchModalVisible"
-      title="Git分支创建结果"
-      :footer="null"
-      width="600px"
-    >
+    <BasicModal v-model:visible="gitBranchModalVisible" title="Git分支创建结果" :footer="null" width="600px">
       <div class="git-branch-result">
         <a-result
           :status="gitBranchResult.success ? 'success' : 'error'"
@@ -108,21 +100,17 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, reactive,watch, onMounted, computed } from 'vue';
+  import { ref, reactive, watch, onMounted, computed } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { PageWrapper } from '/@/components/Page';
   import { BasicModal, useModal } from '/@/components/Modal';
   import { Icon } from '/@/components/Icon';
   import { useMessage } from '/@/hooks/web/useMessage';
-  import {  } from './Project.api';
-  import { 
-    getProjectDetail, 
-    createGitBranch, 
-    generateGitBranchName 
-  } from './Project.api';
+  import {} from './Project.api';
+  import { getProjectDetail, createGitBranch, generateGitBranchName } from './Project.api';
   import { ProjectModel, ProjectType, ProjectStatus } from './Project.data';
   import ProjectModal from './components/ProjectModal.vue';
-  
+
   import PipelineManager from './components/PipelineManager.vue';
   import { formatToDateTime } from '/@/utils/dateUtil';
 
@@ -132,13 +120,13 @@
   const route = useRoute();
   const router = useRouter();
   const { createMessage } = useMessage();
-  
+
   // 项目ID：优先使用外部传入的 props.projectId，其次使用路由参数
   const projectId = computed(() => (props.projectId as string) || (route.params?.id as string));
-  
+
   // 项目数据
   const projectData = ref<ProjectModel>();
-  
+
   // 绑定应用的流水线数据（从 /verto/appmanage/pipeline/binding/list 获取用于回退解析）
   type BindingItem = { id?: string | number; jobName: string; remark?: string; jobUrl?: string; environment?: string };
   const pipelineOptions = ref<BindingItem[]>([]);
@@ -147,32 +135,43 @@
     const cfg: any = projectData.value?.appConfig;
     let appCfg = cfg;
     if (typeof appCfg === 'string') {
-      try { appCfg = JSON.parse(appCfg); } catch (e) { appCfg = {}; }
+      try {
+        appCfg = JSON.parse(appCfg);
+      } catch (e) {
+        appCfg = {};
+      }
     }
+    // 1) 首选后端保存的绑定信息
     if (appCfg && appCfg.pipelineBinding) {
-      return appCfg.pipelineBinding as BindingItem;
+      const binding = appCfg.pipelineBinding as BindingItem;
+      // 如果仅保存了 id，补全显示信息
+      if (binding && binding.id && (!binding.jobName || !binding.jobUrl)) {
+        const found = pipelineOptions.value.find((b) => String(b.id) === String(binding.id));
+        return found ? { ...found, ...binding } : binding;
+      }
+      return binding;
     }
-    // 回退到本地存储的选择
+    // 2) 回退到本地存储的选择
     const storageKey = getSelectionStorageKey(projectId.value);
     const savedId = storageKey ? localStorage.getItem(storageKey) : null;
     if (savedId) {
-      return pipelineOptions.value.find((b) => String(b.id) === String(savedId)) || null;
+      const found = pipelineOptions.value.find((b) => String(b.id) === String(savedId));
+      return found || null;
     }
     return null;
   });
-  
+
   function getSelectionStorageKey(pid?: string) {
     return pid ? `projectPipelineSelection:${pid}` : '';
   }
-  
+
   // 当前激活的标签页
   const activeTab = ref('basic');
-  
+
   // 加载状态
   const loading = ref(false);
   const gitBranchLoading = ref(false);
-  
-  
+
   // Git分支创建结果
   const gitBranchModalVisible = ref(false);
   const gitBranchResult = reactive({
@@ -190,7 +189,7 @@
    */
   async function loadProjectDetail() {
     if (!projectId.value) return;
-    
+
     try {
       loading.value = true;
       const result = await getProjectDetail({ id: projectId.value });
@@ -210,7 +209,11 @@
       // 解析 appConfig 字段（如为字符串）
       let appCfg: any = result?.appConfig;
       if (typeof appCfg === 'string') {
-        try { appCfg = JSON.parse(appCfg); } catch (e) { appCfg = {}; }
+        try {
+          appCfg = JSON.parse(appCfg);
+        } catch (e) {
+          appCfg = {};
+        }
       }
       result.appConfig = appCfg;
       projectData.value = result;
@@ -273,40 +276,40 @@
   /**
    * 创建Git分支
    */
-  async function handleCreateGitBranch() {
-    if (!projectData.value) return;
-    
-    try {
-      gitBranchLoading.value = true;
-      const itemId = projectData.value.requirementId || projectData.value.bugId;
-      if (!itemId) {
-        createMessage.error('需求ID或BUG ID不能为空');
-        return;
-      }
-      
-      const result = await createGitBranch({
-        projectId: projectId.value,
-        projectType: projectData.value.projectType,
-        itemId,
-        appId: projectData.value.relatedAppId,
-      });
-      
-      gitBranchResult.success = result.success;
-      gitBranchResult.message = result.message;
-      gitBranchResult.command = result.command;
-      gitBranchResult.branchName = result.branchName;
-      gitBranchModalVisible.value = true;
-      
-      if (result.success) {
-        // 更新项目数据中的Git分支信息
-        projectData.value.gitBranch = result.branchName;
-      }
-    } catch (error) {
-      createMessage.error('创建Git分支失败');
-    } finally {
-      gitBranchLoading.value = false;
-    }
-  }
+  // async function handleCreateGitBranch() {
+  //   if (!projectData.value) return;
+
+  //   try {
+  //     gitBranchLoading.value = true;
+  //     const itemId = projectData.value.requirementId || projectData.value.bugId;
+  //     if (!itemId) {
+  //       createMessage.error('需求ID或BUG ID不能为空');
+  //       return;
+  //     }
+
+  //     const result = await createGitBranch({
+  //       projectId: projectId.value,
+  //       projectType: projectData.value.projectType,
+  //       itemId,
+  //       appId: projectData.value.relatedAppId,
+  //     });
+
+  //     gitBranchResult.success = result.success;
+  //     gitBranchResult.message = result.message;
+  //     gitBranchResult.command = result.command;
+  //     gitBranchResult.branchName = result.branchName;
+  //     gitBranchModalVisible.value = true;
+
+  //     if (result.success) {
+  //       // 更新项目数据中的Git分支信息
+  //       projectData.value.gitBranch = result.branchName;
+  //     }
+  //   } catch (error) {
+  //     createMessage.error('创建Git分支失败');
+  //   } finally {
+  //     gitBranchLoading.value = false;
+  //   }
+  // }
 
   // 已移除：项目管理页内的触发流水线逻辑，统一由 PipelineManager 承载
 
@@ -380,7 +383,7 @@
       high: '高',
     };
     const key = (priority || '').toLowerCase();
-    return map[key] || (priority || '-');
+    return map[key] || priority || '-';
   }
 
   /**
@@ -440,62 +443,62 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      
+
       .project-title {
         h2 {
           margin: 0 0 8px 0;
           font-size: 24px;
           font-weight: 600;
         }
-        
+
         .project-meta {
           display: flex;
           align-items: center;
           gap: 12px;
-          
+
           .project-id {
             color: #666;
             font-size: 14px;
           }
         }
       }
-      
+
       .project-actions {
         display: flex;
         gap: 8px;
       }
     }
-    
+
     .project-tabs {
       height: 100%;
       width: 100%;
-      
+
       :deep(.ant-tabs-content-holder) {
         height: calc(100% - 44px);
         overflow: auto;
       }
-      
+
       :deep(.ant-tabs-tabpane) {
         width: 100%;
         height: 100%;
       }
     }
-    
+
     .tab-content {
       padding: 16px;
       width: 100%;
       box-sizing: border-box;
     }
-    
+
     .design-links-section {
       margin-top: 24px;
-      
+
       h3 {
         margin-bottom: 16px;
         font-size: 16px;
         font-weight: 600;
       }
-      
+
       .design-links {
         .design-link-item {
           display: flex;
@@ -505,15 +508,15 @@
           padding: 8px;
           background: #fafafa;
           border-radius: 4px;
-          
+
           .link-title {
             font-weight: 500;
           }
-          
+
           .link-url {
             color: #1890ff;
             text-decoration: none;
-            
+
             &:hover {
               text-decoration: underline;
             }
@@ -521,11 +524,11 @@
         }
       }
     }
-    
+
     .git-branch-result {
       .git-command {
         text-align: left;
-        
+
         h4 {
           margin-bottom: 8px;
           font-size: 14px;

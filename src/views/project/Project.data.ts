@@ -532,6 +532,7 @@ export const step2Schemas: FormSchema[] = [
     component: 'Input',
     slot: 'pipelineBinding',
     // 仅当已选择应用时显示
+    required: true,
     show: ({ values }) => !!values.appId,
     colProps: { span: 24 },
   },
@@ -550,7 +551,7 @@ export const step2Schemas: FormSchema[] = [
       resultField: 'records', // 从分页数据中提取 records 字段
     },
     colProps: { span: 24 },
-  }
+  },
 ];
 
 /**
@@ -562,10 +563,8 @@ export const step3Schemas: FormSchema[] = [
     label: 'Git分支',
     component: 'Input',
     componentProps: {
-      placeholder: '系统将根据项目类型自动生成分支名称',
-      disabled: true,
+      placeholder: '请填写git分支名',
     },
-    helpMessage: '分支名称将根据项目类型和ID自动生成',
     colProps: { span: 24 },
   },
   {

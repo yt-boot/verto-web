@@ -47,7 +47,8 @@
             <a-descriptions-item label="版本号">
               {{ appInfo.version || '暂无数据' }}
             </a-descriptions-item>
-            <a-descriptions-item label="Git仓库地址">
+            <!-- 为避免 Descriptions 行列跨度不匹配的告警，此处占满一行 -->
+            <a-descriptions-item label="Git仓库地址" :span="2">
               <template v-if="appInfo.gitInfo && appInfo.gitInfo.repoUrl">
                 <a :href="appInfo.gitInfo.repoUrl" target="_blank">
                   {{ appInfo.gitInfo.repoUrl }}

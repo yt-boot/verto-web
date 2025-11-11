@@ -7,7 +7,30 @@
     @cancel="handleCancel"
     width="900px"
   >
-    <BasicForm @register="registerForm">
+  <BasicForm @register="registerForm">
+      <template #pipelineBinding="{ model, field }">
+        <div>
+          <a-space align="start">
+            <a-select
+              :value="model[field]?.id ? String(model[field]?.id) : undefined"
+              :loading="pipelineLoading"
+              :options="pipelineOptions.map(b => ({ label: `${b.jobName}${b.environment ? ' (' + b.environment + ')' : ''}`, value: String(b.id) }))"
+              style="min-width: 320px"
+              placeholder="请选择需要绑定的 Jenkins 流水线"
+              allowClear
+              @change="(val) => {
+                const selected = pipelineOptions.find(b => String(b.id) === String(val)) || null;
+                selectedBinding.value = selected as any;
+                model[field] = selected;
+              }"
+            />
+            <div v-if="model[field]?.jobUrl" style="line-height: 32px;">
+              已选择：<a :href="model[field].jobUrl" target="_blank">{{ model[field].jobName }}</a>
+              <span v-if="model[field].environment">（{{ model[field].environment }}）</span>
+            </div>
+          </a-space>
+        </div>
+      </template>
       <template #designLinks="{ model, field }">
         <div class="design-links">
           <div v-for="(link, index) in model[field]" :key="index" class="design-link-item">
@@ -40,7 +63,7 @@ import {
   ProjectType,
   ProjectModel,
 } from '../Project.data';
-import { saveProject, updateProject } from '../Project.api';
+import { saveProject, updateProject, getPipelineBindingList } from '../Project.api';
 
 const emit = defineEmits(['success', 'register']);
 
@@ -49,12 +72,35 @@ const recordRef = ref<any>({});
 
 const getTitle = computed(() => (!unref(isUpdate) ? '新增项目' : '编辑项目'));
 
-const [registerForm, { setFieldsValue, validate, resetFields }] = useForm({
+const [registerForm, { setFieldsValue, validate, resetFields, updateSchema, getFieldsValue }] = useForm({
   labelWidth: 120,
   showActionButtonGroup: false,
   baseColProps: { span: 24 },
   schemas: [...step1Schemas, ...step2Schemas, ...step3Schemas],
 });
+
+// 绑定流水线下拉选项与选择
+type BindingItem = { id?: string | number; jobName: string; jobUrl?: string; environment?: string; remark?: string };
+const pipelineOptions = ref<BindingItem[]>([]);
+const selectedBinding = ref<BindingItem | null>(null);
+const pipelineLoading = ref(false);
+
+async function loadPipelineBindings(appId?: string) {
+  if (!appId) {
+    pipelineOptions.value = [];
+    selectedBinding.value = null;
+    return;
+  }
+  try {
+    pipelineLoading.value = true;
+    const res = await getPipelineBindingList({ appId });
+    pipelineOptions.value = Array.isArray(res?.records) ? res.records : [];
+    pipelineLoading.value = false;
+  } catch (e) {
+    pipelineOptions.value = [];
+    pipelineLoading.value = false;
+  }
+}
 
 const [registerModal, { setModalProps, closeModal }] = useModalInner(async (data) => {
   setModalProps({ confirmLoading: false });
@@ -75,6 +121,17 @@ const [registerModal, { setModalProps, closeModal }] = useModalInner(async (data
     if (!Array.isArray(designLinks)) {
       designLinks = [];
     }
+
+    // 解析 appConfig 以回填绑定的流水线
+    let appConfig: any = recordRef.value.appConfig;
+    if (typeof appConfig === 'string') {
+      try {
+        appConfig = JSON.parse(appConfig);
+      } catch (e) {
+        appConfig = {};
+      }
+    }
+    const pipelineBinding = appConfig?.pipelineBinding || null;
 
     const initial = {
       id: recordRef.value.id,
@@ -100,12 +157,39 @@ const [registerModal, { setModalProps, closeModal }] = useModalInner(async (data
       onlineTime: recordRef.value.onlineTime,
       releaseTime: recordRef.value.releaseTime,
       remark: recordRef.value.remark,
+      pipelineBinding,
     };
     setFieldsValue(initial);
+    await loadPipelineBindings(recordRef.value.relatedAppId);
+    selectedBinding.value = pipelineBinding || null;
   } else {
     resetFields();
-    setFieldsValue({ designLinks: [] });
+    setFieldsValue({ designLinks: [], pipelineBinding: null });
   }
+
+  // 当应用选择变化时，动态加载流水线绑定列表
+  await updateSchema({
+    field: 'appId',
+    componentProps: {
+      onChange: async (opt: any) => {
+        const appId = opt?.value ?? opt;
+        await loadPipelineBindings(appId);
+        // 清空当前选择
+        selectedBinding.value = null;
+        setFieldsValue({ pipelineBinding: null });
+      },
+    },
+  });
+
+  // 监听类型与ID变化，动态生成只读 gitBranch 的显示值
+  const refreshBranch = () => {
+    const vals = getFieldsValue();
+    const branch = computeBranch(vals);
+    setFieldsValue({ gitBranch: branch });
+  };
+  await updateSchema({ field: 'type', componentProps: { onChange: refreshBranch } });
+  await updateSchema({ field: 'requirementId', componentProps: { onChange: refreshBranch } });
+  await updateSchema({ field: 'bugId', componentProps: { onChange: refreshBranch } });
 });
 
 function addDesignLink(list: any[]) {
@@ -120,10 +204,10 @@ function removeDesignLink(list: any[], index: number) {
 
 function computeBranch(values: any) {
   if (values?.type === ProjectType.REQUIREMENT && values?.requirementId) {
-    return `feature/REQ-${values.requirementId}`;
+    return `${values.requirementId}`;
   }
   if (values?.type === ProjectType.BUG && values?.bugId) {
-    return `bugfix/BUG-${values.bugId}`;
+    return `${values.bugId}`;
   }
   return values?.gitBranch || '';
 }
@@ -157,6 +241,15 @@ async function handleSubmit() {
     const gitBranch = computeBranch(values);
 
     // 确保编辑请求携带正确的主键ID（有些情况下 id 不在表单 schema 中，validate 返回的 values 可能缺少 id）
+    // 组装 appConfig，保存绑定的流水线信息
+    let originalAppConfig: any = recordRef.value?.appConfig;
+    if (typeof originalAppConfig === 'string') {
+      try { originalAppConfig = JSON.parse(originalAppConfig); } catch (e) { originalAppConfig = {}; }
+    }
+    if (!originalAppConfig || typeof originalAppConfig !== 'object') {
+      originalAppConfig = {};
+    }
+
     const payload: ProjectModel = {
       id: recordRef.value?.id ?? values.id,
       projectType: values.type,
@@ -176,6 +269,10 @@ async function handleSubmit() {
       status: values.status,
       priority: values.priority,
       gitBranch,
+      appConfig: {
+        ...originalAppConfig,
+        pipelineBinding: values.pipelineBinding || selectedBinding.value || null,
+      },
     } as ProjectModel;
 
     setModalProps({ confirmLoading: true });
@@ -186,6 +283,15 @@ async function handleSubmit() {
       await saveProject(payload);
       message.success('项目创建成功！');
     }
+    // 将绑定的流水线选择写入本地存储，供列表/详情的回退逻辑使用
+    try {
+      const binding = (payload.appConfig as any)?.pipelineBinding;
+      const projectId = payload.id;
+      if (projectId && binding && binding.id) {
+        const storageKey = `projectPipelineSelection:${projectId}`;
+        localStorage.setItem(storageKey, String(binding.id));
+      }
+    } catch (_) {}
     setModalProps({ confirmLoading: false });
     handleSuccess();
   } catch (e) {

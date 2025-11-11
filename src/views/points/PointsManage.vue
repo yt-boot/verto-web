@@ -2,7 +2,7 @@
   <div class="points-manage">
     <PageWrapper title="积分管理" content="展示所有人员的积分流水，通过筛选查看个人或时间区间，并通过抽屉进行积分调整">
       <template #extra>
-        <a-button type="primary" v-auth="'staff:points:adjust'" @click="openAdjustDrawer">
+        <a-button type="primary" @click="openAdjustDrawer">
           <Icon icon="ant-design:plus-outlined" />
           新增调整
         </a-button>
@@ -36,7 +36,8 @@
   import { useMessage } from '/@/hooks/web/useMessage';
   import { BasicDrawer } from '/@/components/Drawer';
   import dayjs from 'dayjs';
-  import { getStaffList, getStaffPointsSummary, getStaffPointsLogs, getAllStaffPointsLogs, adjustStaffPoints } from '../staff/staff.api';
+  // 使用当前 points 目录下的独立接口
+  import { getStaffList, getStaffPointsSummary, getStaffPointsLogs, getAllStaffPointsLogs, adjustStaffPoints } from './points.api';
 
   const route = useRoute();
   const { createMessage } = useMessage();

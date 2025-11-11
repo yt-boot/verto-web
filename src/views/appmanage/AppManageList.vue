@@ -64,7 +64,7 @@
   import { useDrawer } from '/@/components/Drawer';
   import AppManageModal from './components/AppManageModal.vue';
   import AppManageDetail from './AppManageDetail.vue';
-  import { getAppList, deleteApp, getDomainDict, getActiveStaffList } from './AppManage.api';
+  import { getAppList, deleteApp, getDomainDict, getActiveStaffList, getUserList } from './AppManage.api';
   import { useMessage } from '/@/hooks/web/useMessage';
   import { useRouter } from 'vue-router';
   import type { AppManageModel } from './AppManage.data';
@@ -94,6 +94,9 @@
       const domainMapRef = ref<Map<string, string>>(new Map());
       const staffIdToNameRef = ref<Map<string, string>>(new Map());
       const staffUsernameToNameRef = ref<Map<string, string>>(new Map());
+      // 系统用户（用于 createBy、managers 的用户名/用户ID 映射）
+      const userIdToNameRef = ref<Map<string, string>>(new Map());
+      const userUsernameToNameRef = ref<Map<string, string>>(new Map());
 
       async function ensureDomainMap() {
         if (domainMapRef.value.size > 0) return;
@@ -134,13 +137,79 @@
         }
       }
 
-      // 对列表数据进行一次性“字典+人员”文本增强（B方案）
-      async function enrichListRows(rows: AppManageModel[]): Promise<AppManageModel[]> {
-        await Promise.all([ensureDomainMap(), ensureStaffMaps()]);
-        const domainMap = domainMapRef.value;
-        const id2name = staffIdToNameRef.value;
-        const username2name = staffUsernameToNameRef.value;
+      async function ensureUserMaps() {
+        if (userIdToNameRef.value.size > 0 || userUsernameToNameRef.value.size > 0) return;
+        try {
+          const res = await getUserList({ pageNo: 1, pageSize: 1000 });
+          const rows = res?.result?.records || res?.result || [];
+          const id2name = new Map<string, string>();
+          const username2name = new Map<string, string>();
+          (rows || []).forEach((u: any) => {
+            if (!u) return;
+            const id = u.id != null ? String(u.id) : undefined;
+            const username = u.username != null ? String(u.username) : undefined;
+            const name = u.realname || u.name || u.nickname || u.label || u.text || username || id || '';
+            if (id) id2name.set(id, name);
+            if (username) username2name.set(username, name);
+          });
+          userIdToNameRef.value = id2name;
+          userUsernameToNameRef.value = username2name;
+        } catch (e) {
+          console.warn('加载系统用户列表失败', e);
+        }
+      }
 
+      // 对列表数据进行一次性“字典+人员”文本增强（支持按ID动态翻译）
+      async function enrichListRows(rows: AppManageModel[]): Promise<AppManageModel[]> {
+        await Promise.all([ensureDomainMap(), ensureStaffMaps(), ensureUserMaps()]);
+        const domainMap = domainMapRef.value;
+        // 合并 staff 和 user 两类映射，优先使用系统用户映射
+        const id2name = new Map<string, string>([
+          ...userIdToNameRef.value,
+          ...staffIdToNameRef.value,
+        ]);
+        const username2name = new Map<string, string>([
+          ...userUsernameToNameRef.value,
+          ...staffUsernameToNameRef.value,
+        ]);
+
+        // 收集当前列表中需要翻译的管理员ID/用户名
+        const pendingIds = new Set<string>();
+        (rows || []).forEach((r: any) => {
+          const managersRaw = r?.managers;
+          const idsArr = Array.isArray(managersRaw)
+            ? managersRaw
+            : String(managersRaw || '')
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean);
+          idsArr.forEach((k: any) => {
+            const key = String(k);
+            if (!id2name.get(key) && !username2name.get(key)) {
+              pendingIds.add(key);
+            }
+          });
+        });
+
+        // 若存在无法翻译的ID，调用 /verto/staff/active 进行按ID动态翻译
+        if (pendingIds.size > 0) {
+          try {
+            const idParam = Array.from(pendingIds).join(',');
+            const resp = await getActiveStaffList({ isMultiTranslate: true, pageSize: pendingIds.size, id: idParam });
+            const list = resp?.result?.records || resp?.result || [];
+            (list || []).forEach((u: any) => {
+              const id = u?.id != null ? String(u.id) : undefined;
+              const username = u?.username != null ? String(u.username) : undefined;
+              const name = u?.name || u?.realname || u?.nickname || u?.label || u?.text || username || id || '';
+              if (id && name) id2name.set(id, name);
+              if (username && name) username2name.set(username, name);
+            });
+          } catch (e) {
+            console.warn('按ID动态翻译人员名称失败', e);
+          }
+        }
+
+        // 生成最终增强后的行
         return (rows || []).map((r: any) => {
           // 领域字典文本
           const domainCode = r?.domain != null ? String(r.domain) : '';
@@ -154,6 +223,7 @@
                 .split(',')
                 .map((s) => s.trim())
                 .filter(Boolean);
+                console.log(idsArr, id2name, username2name);
           const managersText = idsArr
             .map((k: any) => {
               const key = String(k);
@@ -181,6 +251,7 @@
           const r = res.result || {};
           const rawRecords = r.records || [];
           const enhancedRecords = await enrichListRows(rawRecords);
+          console.log('enhancedRecords', enhancedRecords);
           return { records: enhancedRecords, total: r.total || rawRecords.length || 0 };
         }
         createMessage.error(res?.message || '加载数据失败');

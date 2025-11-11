@@ -6,7 +6,7 @@
     width="980px"
     destroyOnClose
   >
-    <ProjectDetail :projectId="innerProjectId" :hidePipelineTab="true" />
+    <ProjectDetail :projectId="innerProjectId" :hidePipelineTab="false" />
   </BasicDrawer>
 </template>
 

@@ -56,7 +56,12 @@ export const getStaffById = (id) => defHttp.get({ url: Api.getStaffById, params:
  */
 export const saveOrUpdateStaff = (params, isUpdate) => {
   const url = isUpdate ? Api.edit : Api.save;
-  return defHttp.post({ url, params });
+  // 后端 skills 字段为字符串（JSON），前端传入为数组时需转换
+  const payload = {
+    ...params,
+    skills: Array.isArray(params?.skills) ? JSON.stringify(params.skills) : (params?.skills ?? '[]'),
+  };
+  return defHttp.post({ url, params: payload });
 };
 
 /**
@@ -69,7 +74,13 @@ export const createStaff = (params) => defHttp.post({ url: Api.save, params });
  * 更新人员信息
  * @param params 人员信息参数
  */
-export const updateStaff = (params) => defHttp.put({ url: Api.edit, params });
+export const updateStaff = (params) => {
+  const payload = {
+    ...params,
+    skills: Array.isArray(params?.skills) ? JSON.stringify(params.skills) : (params?.skills ?? '[]'),
+  };
+  return defHttp.put({ url: Api.edit, params: payload });
+};
 
 /**
  * 删除人员

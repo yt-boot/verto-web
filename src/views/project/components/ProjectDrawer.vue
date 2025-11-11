@@ -34,11 +34,7 @@
               style="min-width: 320px"
               placeholder="请选择需要绑定的 Jenkins 流水线"
               allowClear
-              @change="(val) => {
-                const selected = pipelineOptions.find(b => String(b.id) === String(val)) || null;
-                selectedBinding.value = selected as any;
-                model[field] = selected;
-              }"
+              @change="(val) => onPipelineChange(val, model, field)"
             />
             <div v-if="model[field]?.jobUrl" style="line-height: 32px;">
               已选择：<a :href="model[field].jobUrl" target="_blank">{{ model[field].jobName }}</a>
@@ -108,6 +104,17 @@ async function loadPipelineBindings(appId?: string) {
     pipelineOptions.value = [];
     pipelineLoading.value = false;
   }
+}
+
+function onPipelineChange(val: any, model: Record<string, any>, field: string) {
+  const selected = pipelineOptions.value.find((b) => String(b.id) === String(val)) || null;
+  // 安全更新选中项与表单模型
+  try {
+    selectedBinding.value = selected as any;
+  } catch (e) {
+    // 避免极端情况下 selectedBinding 未初始化造成的报错
+  }
+  model[field] = selected;
 }
 
 const [registerDrawer, { setDrawerProps }] = useDrawerInner(async (data) => {
@@ -193,6 +200,16 @@ const [registerDrawer, { setDrawerProps }] = useDrawerInner(async (data) => {
       },
     },
   });
+
+  // 监听类型与ID变化，动态生成只读 gitBranch 的显示值
+  const refreshBranch = () => {
+    const vals = getFieldsValue();
+    const branch = computeBranch(vals);
+    setFieldsValue({ gitBranch: branch });
+  };
+  await updateSchema({ field: 'type', componentProps: { onChange: refreshBranch } });
+  await updateSchema({ field: 'requirementId', componentProps: { onChange: refreshBranch } });
+  await updateSchema({ field: 'bugId', componentProps: { onChange: refreshBranch } });
 });
 
 function addDesignLink(list: any[]) {
@@ -207,10 +224,10 @@ function removeDesignLink(list: any[], index: number) {
 
 function computeBranch(values: any) {
   if (values?.type === ProjectType.REQUIREMENT && values?.requirementId) {
-    return `feature/REQ-${values.requirementId}`;
+    return `${values.requirementId}`;
   }
   if (values?.type === ProjectType.BUG && values?.bugId) {
-    return `bugfix/BUG-${values.bugId}`;
+    return `${values.bugId}`;
   }
   return values?.gitBranch || '';
 }
@@ -288,6 +305,15 @@ async function handleSubmit() {
       await saveProject(payload);
       message.success('项目创建成功！');
     }
+    // 将绑定的流水线选择写入本地存储，供列表/详情的回退逻辑使用
+    try {
+      const binding = (payload.appConfig as any)?.pipelineBinding;
+      const projectId = payload.id;
+      if (projectId && binding && binding.id) {
+        const storageKey = `projectPipelineSelection:${projectId}`;
+        localStorage.setItem(storageKey, String(binding.id));
+      }
+    } catch (_) {}
     setDrawerProps({ loading: false });
     emit('success');
   } catch (e) {

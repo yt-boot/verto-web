@@ -18,7 +18,12 @@
         <a-descriptions-item label="入职时间">{{ record?.hireDate || '-' }}</a-descriptions-item>
         <a-descriptions-item label="工位位置">{{ record?.workLocation || '-' }}</a-descriptions-item>
         <a-descriptions-item label="擅长技能">
-          {{ Array.isArray(record?.skills) ? record?.skills.join(', ') : (record?.skills || '-') }}
+          <template v-if="Array.isArray(record?.skills)">
+            {{ (record?.skills.length ?? 0) > 0 ? record?.skills.join(', ') : '-' }}
+          </template>
+          <template v-else>
+            {{ record?.skills || '-' }}
+          </template>
         </a-descriptions-item>
         <a-descriptions-item label="积分">{{ record?.points ?? 0 }}</a-descriptions-item>
         <a-descriptions-item label="状态">
@@ -39,12 +44,13 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, computed, unref } from 'vue';
+  import { ref, computed, unref, nextTick } from 'vue';
   import { BasicDrawer, useDrawerInner } from '/@/components/Drawer';
   import { BasicForm, useForm } from '/@/components/Form';
   import { useMessage } from '/@/hooks/web/useMessage';
   import { formSchema, StaffModel } from './staff.data';
   import { saveOrUpdateStaff } from './staff.api';
+  import dayjs from 'dayjs';
 
   const emit = defineEmits(['success', 'register']);
 
@@ -89,8 +95,26 @@
     // 编辑 / 查看模式填充数据
     if (data?.record) {
       rowId.value = data.record.id;
-      record.value = { ...data.record } as StaffModel;
-      setFieldsValue({ ...data.record });
+      // 规范化 record 数据类型
+      const normalized: StaffModel = {
+        ...(data.record as StaffModel),
+        skills: Array.isArray(data.record?.skills)
+          ? (data.record.skills as any)
+          : (() => {
+              try {
+                const arr = JSON.parse((data.record as any)?.skills ?? '[]');
+                return Array.isArray(arr) ? arr : [];
+              } catch (e) {
+                const s = (data.record as any)?.skills;
+                return typeof s === 'string' ? s.split(',').map((x: string) => x.trim()).filter(Boolean) : [];
+              }
+            })(),
+        hireDate: data.record?.hireDate ? dayjs(data.record.hireDate as any).format('YYYY-MM-DD') : undefined,
+      } as any;
+      record.value = normalized;
+      // 等待表单渲染完成再回填，避免未挂载导致回填失败
+      await nextTick();
+      setFieldsValue(normalized as any);
     }
   });
 
@@ -105,7 +129,14 @@
     try {
       const values = await validate();
       setDrawerProps({ confirmLoading: true });
-      await saveOrUpdateStaff(values as StaffModel, unref(isUpdate));
+      // 提交前转换 skills 为字符串
+      const payload = {
+        ...(values as any),
+        skills: Array.isArray((values as any)?.skills)
+          ? JSON.stringify((values as any).skills)
+          : (values as any)?.skills ?? '[]',
+      };
+      await saveOrUpdateStaff(payload as StaffModel, unref(isUpdate));
       createMessage.success(`${unref(isUpdate) ? '编辑' : '新增'}成功！`);
       closeDrawer();
       emit('success');
