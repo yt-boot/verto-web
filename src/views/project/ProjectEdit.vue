@@ -21,6 +21,15 @@
 
       <div class="project-edit-container">
         <BasicForm @register="registerForm">
+          <template #developerId="{ model, field }">
+            <StaffSelectUser 
+              v-model:value="model[field]" 
+              placeholder="请选择应用负责人"
+              :mode="'multiple'"
+              :rowKey="'id'"
+              :labelKey="'name'"
+            />
+          </template>
           <template #designLinks="{ model, field }">
             <div class="design-links">
               <div v-for="(link, index) in model[field]" :key="index" class="design-link-item">
@@ -42,7 +51,7 @@
                 <a-select
                   :value="model[field]?.id ? String(model[field]?.id) : undefined"
                   :loading="pipelineLoading"
-                  :options="pipelineOptions.map(b => ({ label: `${b.jobName}${b.environment ? ' (' + b.environment + ')' : ''}`, value: String(b.id) }))"
+                  :options="pipelineOptions.map(b => ({ label: `${b.pipelineName}${b.environment ? ' (' + b.environment + ')' : ''}`, value: String(b.id) }))"
                   style="min-width: 320px"
                   placeholder="请选择需要绑定的 Jenkins 流水线"
                   allowClear
@@ -53,7 +62,7 @@
                   }"
                 />
                 <div v-if="model[field]?.jobUrl" style="line-height: 32px;">
-                  已选择：<a :href="model[field].jobUrl" target="_blank">{{ model[field].jobName }}</a>
+                  已选择：<a :href="model[field].jobUrl" target="_blank">{{ model[field].pipelineName }}</a>
                   <span v-if="model[field].environment">（{{ model[field].environment }}）</span>
                 </div>
               </a-space>
@@ -79,6 +88,7 @@
   import { message } from 'ant-design-vue';
   import { getProjectDetail, saveProject, updateProject, getPipelineBindingList } from './Project.api';
   import { step1Schemas, step2Schemas, step3Schemas, ProjectType, ProjectModel } from './Project.data';
+import StaffSelectUser from '/@/views/appmanage/components/StaffSelectUser.vue';
 
   const route = useRoute();
   const router = useRouter();
@@ -93,7 +103,7 @@
   });
 
   // 绑定流水线下拉选项与选择
-  type BindingItem = { id?: string | number; jobName: string; jobUrl?: string; environment?: string; remark?: string };
+  type BindingItem = { id?: string | number; pipelineName: string; jobUrl?: string; environment?: string; remark?: string };
   const pipelineOptions = ref<BindingItem[]>([]);
   const selectedBinding = ref<BindingItem | null>(null);
   const pipelineLoading = ref(false);
@@ -107,6 +117,7 @@
     try {
       pipelineLoading.value = true;
       const res = await getPipelineBindingList({ appId });
+      console.log('加载流水线绑定列表成功2:', Array.isArray(res?.records) ? res.records : []);
       pipelineOptions.value = Array.isArray(res?.records) ? res.records : [];
       pipelineLoading.value = false;
     } catch (e) {
@@ -173,10 +184,7 @@
           value: result.relatedAppId,
           label: result.relatedAppName || '',
         },
-        developerId: {
-          value: result.developerId,
-          label: result.developerName || '',
-        },
+        developerId: result.developerId, // 直接使用字符串格式，符合StaffSelectUser组件要求
         status: result.status,
         priority: result.priority,
         gitBranch: result.gitBranch,
@@ -262,8 +270,8 @@
         description: values.description,
         relatedAppId: values.appId?.value ?? values.appId,
         relatedAppName: values.appId?.label,
-        developerId: values.developerId?.value ?? values.developerId,
-        developerName: values.developerId?.label,
+        developerId: values.developerId, // StaffSelectUser组件返回字符串或数组
+        developerName: values.developerId, // 暂时使用ID作为名称，后端会处理转换
         designLinks: values.designLinks || [],
         startTime: values.startTime,
         testTime: values.testTime,
@@ -280,10 +288,8 @@
 
       if (isEdit.value) {
         await updateProject(payload);
-        createMessage.success('项目更新成功');
       } else {
         await saveProject(payload);
-        createMessage.success('项目创建成功');
       }
       // 将绑定的流水线选择写入本地存储，供列表/详情的回退逻辑使用
       try {

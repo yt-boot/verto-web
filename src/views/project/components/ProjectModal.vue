@@ -8,13 +8,22 @@
     width="900px"
   >
   <BasicForm @register="registerForm">
+     <template #developerId="{ model, field }">
+        <StaffSelectUser 
+          v-model:value="model[field]" 
+          placeholder="请选择应用负责人"
+          :mode="'multiple'"
+          :rowKey="'id'"
+          :labelKey="'name'"
+        />
+      </template>
       <template #pipelineBinding="{ model, field }">
         <div>
           <a-space align="start">
             <a-select
               :value="model[field]?.id ? String(model[field]?.id) : undefined"
               :loading="pipelineLoading"
-              :options="pipelineOptions.map(b => ({ label: `${b.jobName}${b.environment ? ' (' + b.environment + ')' : ''}`, value: String(b.id) }))"
+              :options="pipelineOptions.map(b => ({ label: `${b.pipelineName}${b.environment ? ' (' + b.environment + ')' : ''}`, value: String(b.id) }))"
               style="min-width: 320px"
               placeholder="请选择需要绑定的 Jenkins 流水线"
               allowClear
@@ -25,7 +34,7 @@
               }"
             />
             <div v-if="model[field]?.jobUrl" style="line-height: 32px;">
-              已选择：<a :href="model[field].jobUrl" target="_blank">{{ model[field].jobName }}</a>
+              已选择：<a :href="model[field].jobUrl" target="_blank">{{ model[field].pipelineName }}</a>
               <span v-if="model[field].environment">（{{ model[field].environment }}）</span>
             </div>
           </a-space>
@@ -64,6 +73,7 @@ import {
   ProjectModel,
 } from '../Project.data';
 import { saveProject, updateProject, getPipelineBindingList } from '../Project.api';
+import StaffSelectUser from '/@/views/appmanage/components/StaffSelectUser.vue';
 
 const emit = defineEmits(['success', 'register']);
 
@@ -80,7 +90,7 @@ const [registerForm, { setFieldsValue, validate, resetFields, updateSchema, getF
 });
 
 // 绑定流水线下拉选项与选择
-type BindingItem = { id?: string | number; jobName: string; jobUrl?: string; environment?: string; remark?: string };
+type BindingItem = { id?: string | number; pipelineName: string; jobUrl?: string; environment?: string; remark?: string };
 const pipelineOptions = ref<BindingItem[]>([]);
 const selectedBinding = ref<BindingItem | null>(null);
 const pipelineLoading = ref(false);
@@ -94,9 +104,12 @@ async function loadPipelineBindings(appId?: string) {
   try {
     pipelineLoading.value = true;
     const res = await getPipelineBindingList({ appId });
+    console.log('获取流水线绑定列表原始响应:', res);
+    // 兼容不同的返回格式，先尝试从res.result.records获取，再尝试从res.records获取
     pipelineOptions.value = Array.isArray(res?.records) ? res.records : [];
     pipelineLoading.value = false;
   } catch (e) {
+    console.error('加载流水线绑定列表失败:', e);
     pipelineOptions.value = [];
     pipelineLoading.value = false;
   }
@@ -278,10 +291,8 @@ async function handleSubmit() {
     setModalProps({ confirmLoading: true });
     if (isUpdate.value) {
       await updateProject(payload);
-      message.success('项目更新成功！');
     } else {
       await saveProject(payload);
-      message.success('项目创建成功！');
     }
     // 将绑定的流水线选择写入本地存储，供列表/详情的回退逻辑使用
     try {

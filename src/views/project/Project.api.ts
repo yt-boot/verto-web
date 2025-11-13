@@ -64,7 +64,7 @@ enum Api {
   getAppList = '/verto/appmanage/app/list',
   getUserList = '/verto/staff/list',
   // 应用流水线绑定列表
-  getPipelineBindingList = '/verto/appmanage/pipeline/binding/list',
+  getPipelineBindingList = '/verto/pipeline/binding/list',
 }
 
 /**
@@ -288,7 +288,7 @@ export const triggerPipeline = (params: {
   commitId?: string;
   parameters?: Record<string, any>;
   // 新增：可选的显式 Jenkins Job 名称或绑定ID
-  jobName?: string;
+  pipelineName?: string;
   bindingId?: string;
 }) => defHttp.post<any>({ url: Api.triggerPipeline, data: params });
 

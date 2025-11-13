@@ -50,7 +50,7 @@
                 <div v-if="boundPipeline">
                   <div>
                     已绑定：
-                    <a :href="boundPipeline.jobUrl" target="_blank">{{ boundPipeline.jobName }}</a>
+                    <a :href="boundPipeline.jobUrl" target="_blank">{{ boundPipeline.pipelineName }}</a>
                     <span v-if="boundPipeline.environment">（{{ boundPipeline.environment }}）</span>
                   </div>
                   <div v-if="boundPipeline.remark" style="margin-top: 8px; color: #999">备注：{{ boundPipeline.remark }}</div>
@@ -60,17 +60,6 @@
             </a-descriptions>
           </div>
         </a-tab-pane>
-
-        <!-- 流水线 -->
-        <!-- 仅保留新建发布与流水线历史，由 PipelineManager 统一承载 -->
-
-        <!-- <a-tab-pane key="pipeline" tab="流水线" v-if="!props.hidePipelineTab">
-          <div class="tab-content">
-            <div class="pipeline-manager">
-              <PipelineManager :project-id="projectId" :app-id="projectData?.relatedAppId" />
-            </div>
-          </div>
-        </a-tab-pane> -->
       </a-tabs>
     </PageWrapper>
 
@@ -128,10 +117,11 @@
   const projectData = ref<ProjectModel>();
 
   // 绑定应用的流水线数据（从 /verto/appmanage/pipeline/binding/list 获取用于回退解析）
-  type BindingItem = { id?: string | number; jobName: string; remark?: string; jobUrl?: string; environment?: string };
+  type BindingItem = { id?: string | number; pipelineName: string; remark?: string; jobUrl?: string; environment?: string };
   const pipelineOptions = ref<BindingItem[]>([]);
   const selectedBindingId = ref<string | number | undefined>(undefined);
   const boundPipeline = computed<BindingItem | null>(() => {
+    console.log('当前项目ID:', projectData.value);
     const cfg: any = projectData.value?.appConfig;
     let appCfg = cfg;
     if (typeof appCfg === 'string') {
@@ -141,11 +131,13 @@
         appCfg = {};
       }
     }
+    console.log('解析后的应用配置:', appCfg);
     // 1) 首选后端保存的绑定信息
     if (appCfg && appCfg.pipelineBinding) {
       const binding = appCfg.pipelineBinding as BindingItem;
       // 如果仅保存了 id，补全显示信息
-      if (binding && binding.id && (!binding.jobName || !binding.jobUrl)) {
+      if (binding && binding.id && (!binding.pipelineName || !binding.jobUrl)) {
+        console.log(pipelineOptions.value,binding.id,'未完整绑定信息，回退到本地存储');
         const found = pipelineOptions.value.find((b) => String(b.id) === String(binding.id));
         return found ? { ...found, ...binding } : binding;
       }
@@ -232,9 +224,10 @@
     try {
       const { defHttp } = await import('/@/utils/http/axios');
       const res = await defHttp.get({
-        url: '/verto/appmanage/pipeline/binding/list',
+        url: '/verto/pipeline/binding/list',
         params: { appId: projectData.value.relatedAppId },
       });
+      console.log('加载流水线绑定列表成功1:', Array.isArray(res?.records) ? res.records : []);
       pipelineOptions.value = Array.isArray(res?.records) ? res.records : [];
       // 恢复本地选择
       const storageKey = getSelectionStorageKey(projectId.value);
@@ -251,6 +244,7 @@
 
   function openSelectedPipeline() {
     const binding = boundPipeline.value;
+    console.log('当前绑定的流水线:', boundPipeline.value);
     if (binding?.jobUrl) {
       window.open(binding.jobUrl, '_blank');
     } else {

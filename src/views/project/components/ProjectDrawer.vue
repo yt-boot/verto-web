@@ -9,6 +9,15 @@
     @ok="handleSubmit"
   >
     <BasicForm @register="registerForm">
+      <template #developerId="{ model, field }">
+        <StaffSelectUser 
+          v-model:value="model[field]" 
+          placeholder="请选择应用负责人"
+          :mode="'multiple'"
+          :rowKey="'id'"
+          :labelKey="'name'"
+        />
+      </template>
       <template #designLinks="{ model, field }">
         <div class="design-links">
           <div v-for="(link, index) in model[field]" :key="index" class="design-link-item">
@@ -30,15 +39,15 @@
             <a-select
               :value="model[field]?.id ? String(model[field]?.id) : undefined"
               :loading="pipelineLoading"
-              :options="pipelineOptions.map(b => ({ label: `${b.jobName}${b.environment ? ' (' + b.environment + ')' : ''}`, value: String(b.id) }))"
+              :options="pipelineOptions.map(b => ({ label: `${b.pipelineName}${b.pipelineType ? ' (' + b.pipelineType + ')' : ''}`, value: String(b.id) }))"
               style="min-width: 320px"
               placeholder="请选择需要绑定的 Jenkins 流水线"
               allowClear
               @change="(val) => onPipelineChange(val, model, field)"
             />
             <div v-if="model[field]?.jobUrl" style="line-height: 32px;">
-              已选择：<a :href="model[field].jobUrl" target="_blank">{{ model[field].jobName }}</a>
-              <span v-if="model[field].environment">（{{ model[field].environment }}）</span>
+              已选择：<a :href="model[field].jobUrl" target="_blank">{{ model[field].pipelineName }}</a>
+              <span v-if="model[field].pipelineType">（{{ model[field].pipelineType }}）</span>
             </div>
           </a-space>
         </div>
@@ -62,6 +71,7 @@ import {
   ProjectModel,
 } from '../Project.data';
 import { saveProject, updateProject, getPipelineBindingList } from '../Project.api';
+import StaffSelectUser from '/@/views/appmanage/components/StaffSelectUser.vue';
 
 interface Emits {
   (e: 'register', ...args: any[]): void;
@@ -84,7 +94,7 @@ const [registerForm, { setFieldsValue, getFieldsValue, validate, resetFields, up
 });
 
 // 绑定流水线下拉选项与选择
-type BindingItem = { id?: string | number; jobName: string; jobUrl?: string; environment?: string; remark?: string };
+type BindingItem = { id?: string | number; pipelineName: string; jobUrl?: string; pipelineType?: string; remark?: string };
 const pipelineOptions = ref<BindingItem[]>([]);
 const selectedBinding = ref<BindingItem | null>(null);
 const pipelineLoading = ref(false);
@@ -98,9 +108,14 @@ async function loadPipelineBindings(appId?: string) {
   try {
     pipelineLoading.value = true;
     const res = await getPipelineBindingList({ appId });
-    pipelineOptions.value = Array.isArray(res?.records) ? res.records : [];
+    // 兼容不同的API返回格式，先检查res.result.records，再检查res.records
+    const records = Array.isArray(res?.result?.records) ? res.result.records : 
+                  Array.isArray(res?.records) ? res.records : [];
+    console.log('加载流水线绑定列表成功:', records);
+    pipelineOptions.value = records;
     pipelineLoading.value = false;
   } catch (e) {
+    console.error('加载流水线绑定列表失败:', e);
     pipelineOptions.value = [];
     pipelineLoading.value = false;
   }
@@ -109,18 +124,23 @@ async function loadPipelineBindings(appId?: string) {
 function onPipelineChange(val: any, model: Record<string, any>, field: string) {
   const selected = pipelineOptions.value.find((b) => String(b.id) === String(val)) || null;
   // 安全更新选中项与表单模型
-  try {
-    selectedBinding.value = selected as any;
-  } catch (e) {
-    // 避免极端情况下 selectedBinding 未初始化造成的报错
-  }
-  model[field] = selected;
+  selectedBinding.value = selected as any;
+  console.log('=====selectedBinding.value',selectedBinding.value);
+  // 使用setFieldsValue而不是直接修改model，确保响应式更新
+  setFieldsValue({ [field]: selected });
 }
 
-const [registerDrawer, { setDrawerProps }] = useDrawerInner(async (data) => {
+const [registerDrawer, { setDrawerProps, closeDrawer }] = useDrawerInner(async (data) => {
   // 初始化抽屉数据
   isUpdate.value = !!data?.isUpdate;
   recordRef.value = data?.record || {};
+  
+  // 确保每次打开抽屉时先重置状态
+  pipelineOptions.value = [];
+  selectedBinding.value = null;
+  
+  // 先清空表单
+  resetFields();
 
   // 编辑时回填，新增时重置为空表单
   if (isUpdate.value) {
@@ -147,7 +167,11 @@ const [registerDrawer, { setDrawerProps }] = useDrawerInner(async (data) => {
       }
     }
     const pipelineBinding = appConfig?.pipelineBinding || null;
+    const relatedAppId = recordRef.value.relatedAppId;
 
+    // 加载该应用的绑定流水线
+    await loadPipelineBindings(relatedAppId);
+    
     const initial = {
       id: recordRef.value.id,
       type: recordRef.value.projectType,
@@ -157,13 +181,10 @@ const [registerDrawer, { setDrawerProps }] = useDrawerInner(async (data) => {
       description: recordRef.value.description,
       // ApiSelect 已开启 labelInValue，需要传入 { value, label }
       appId: {
-        value: recordRef.value.relatedAppId,
+        value: relatedAppId,
         label: recordRef.value.relatedAppName || '',
       },
-      developerId: {
-        value: recordRef.value.developerId,
-        label: recordRef.value.developerName || '',
-      },
+      developerId: recordRef.value.developerId, // 直接使用字符串格式，符合StaffSelectUser组件要求
       status: recordRef.value.status,
       priority: recordRef.value.priority,
       gitBranch: recordRef.value.gitBranch,
@@ -173,16 +194,24 @@ const [registerDrawer, { setDrawerProps }] = useDrawerInner(async (data) => {
       onlineTime: recordRef.value.onlineTime,
       releaseTime: recordRef.value.releaseTime,
       remark: recordRef.value.remark,
-      pipelineBinding,
+      pipelineBinding: null, // 先设为null，等数据加载完成后再设置
     };
+    console.log(recordRef.value,'pipelineBinding',pipelineBinding);
+    // 设置表单值（不含流水线绑定）
     setFieldsValue(initial);
-    // 加载该应用的绑定流水线
-    await loadPipelineBindings(recordRef.value.relatedAppId);
-    // 设置默认选中
-    selectedBinding.value = pipelineBinding || null;
+    
+    // 单独设置流水线绑定值，确保在数据加载完成后
+    if (pipelineBinding && pipelineOptions.value.length > 0) {
+      console.log('ssssss',pipelineBinding);
+      // 确保流水线数据已加载，并且在options中存在对应的项
+      const bindingExists = pipelineOptions.value.some(item => String(item.id) === String(pipelineBinding.id));
+     console.log(bindingExists,'bindingExists')
+      if (bindingExists) {
+        selectedBinding.value = pipelineBinding;
+        setFieldsValue({ pipelineBinding });
+      }
+    }
   } else {
-    // 清空所有字段，确保抽屉为“空表单”
-    resetFields();
     // 确保设计链接数组初始化为空以便插槽正常工作
     setFieldsValue({ designLinks: [], pipelineBinding: null });
   }
@@ -280,8 +309,8 @@ async function handleSubmit() {
       // ApiSelect 使用 labelInValue，保存名称与ID
       relatedAppId: values.appId?.value ?? values.appId,
       relatedAppName: values.appId?.label,
-      developerId: values.developerId?.value ?? values.developerId,
-      developerName: values.developerId?.label,
+      developerId: values.developerId, // StaffSelectUser组件返回字符串或数组
+      developerName: values.developerId, // 暂时使用ID作为名称，后端会处理转换
       designLinks: values.designLinks || [],
       startTime: values.startTime,
       testTime: values.testTime,
@@ -300,10 +329,8 @@ async function handleSubmit() {
     setDrawerProps({ loading: true });
     if (isUpdate.value) {
       await updateProject(payload);
-      message.success('项目更新成功！');
     } else {
       await saveProject(payload);
-      message.success('项目创建成功！');
     }
     // 将绑定的流水线选择写入本地存储，供列表/详情的回退逻辑使用
     try {
@@ -316,6 +343,7 @@ async function handleSubmit() {
     } catch (_) {}
     setDrawerProps({ loading: false });
     emit('success');
+    closeDrawer();
   } catch (e) {
     console.error(e);
     setDrawerProps({ loading: false });

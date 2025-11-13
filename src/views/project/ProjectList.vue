@@ -165,7 +165,6 @@
    */
   async function handleDelete(record) {
     await deleteProject({ id: record.id });
-    createMessage.success('删除成功！');
     reload();
   }
 
@@ -174,7 +173,6 @@
    */
   async function batchHandleDelete() {
     await batchDeleteProject({ ids: selectedRowKeys.value });
-    createMessage.success('删除成功！');
     reload();
   }
 

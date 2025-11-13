@@ -503,7 +503,7 @@ async function loadBindingsByEnv() {
     const resp: any = await listBindings({ appId: String(appId), environment: releaseForm.environment });
     const list = Array.isArray(resp?.result) ? resp.result : Array.isArray(resp?.data) ? resp.data : Array.isArray(resp) ? resp : [];
     bindingOptions.value = (list || []).map((b: any) => ({
-      label: `${b.jobName || b.name || b.id} (${b.environment || releaseForm.environment})`,
+      label: `${b.pipelineName || b.name || b.id} (${b.environment || releaseForm.environment})`,
       value: String(b.id),
     }));
   } catch (e) {

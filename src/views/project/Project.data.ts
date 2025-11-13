@@ -281,9 +281,14 @@ export const searchFormSchema: FormSchema[] = [
     label: '开发人员',
     component: 'ApiSelect',
     componentProps: {
-      api: () => Promise.resolve([]), // 这里需要调用实际的人员列表API
+      api: getUserList, // 调用实际的人员列表API
       labelField: 'name',
       valueField: 'id',
+      params: {
+        pageSize: 50, // 设置获取至少50条数据
+        pageNum: 1
+      },
+      resultField: 'records', // 从分页数据中提取 records 字段
     },
     colProps: { span: 6 },
   },
@@ -353,12 +358,11 @@ export const formSchema: FormSchema[] = [
   {
     field: 'developerId',
     label: '开发人员',
-    component: 'ApiSelect',
     required: true,
+    component: 'Input', // 使用slot方式，这里改为Input占位
+    slot: 'developerId', // 指定使用slot
     componentProps: {
-      api: () => Promise.resolve([]), // 这里需要调用实际的人员列表API
-      labelField: 'name',
-      valueField: 'id',
+      placeholder: '请选择开发人员',
     },
     colProps: { span: 12 },
   },
@@ -494,16 +498,7 @@ export const step1Schemas: FormSchema[] = [
     },
     colProps: { span: 24 },
   },
-  {
-    field: 'description',
-    label: '项目描述',
-    component: 'InputTextArea',
-    componentProps: {
-      rows: 4,
-      placeholder: '请详细描述项目需求或BUG情况...',
-    },
-    colProps: { span: 24 },
-  },
+
 ];
 
 /**
@@ -539,19 +534,13 @@ export const step2Schemas: FormSchema[] = [
   {
     field: 'developerId',
     label: '开发人员',
-    component: 'ApiSelect',
     required: true,
+    component: 'Input', // 使用slot方式，这里改为Input占位
+    slot: 'developerId', // 指定使用slot
     componentProps: {
-      api: getUserList, // 调用人员管理列表接口：/verto-backend/staff/list
-      labelField: 'name',
-      valueField: 'id',
-      // 返回 { label, value } 以便保存姓名用于列表展示
-      labelInValue: true,
       placeholder: '请选择开发人员',
-      resultField: 'records', // 从分页数据中提取 records 字段
     },
-    colProps: { span: 24 },
-  },
+  }
 ];
 
 /**
@@ -568,12 +557,12 @@ export const step3Schemas: FormSchema[] = [
     colProps: { span: 24 },
   },
   {
-    field: 'remark',
-    label: '备注信息',
+    field: 'description',
+    label: '项目描述',
     component: 'InputTextArea',
     componentProps: {
-      rows: 3,
-      placeholder: '请输入其他备注信息...',
+      rows: 4,
+      placeholder: '请详细描述项目需求或BUG情况...',
     },
     colProps: { span: 24 },
   },
