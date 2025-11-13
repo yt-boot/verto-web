@@ -1,981 +1,368 @@
 <template>
   <div class="app-basic-info">
-    <a-row :gutter="24">
-      <!-- 应用基本信息 -->
-      <a-col :span="24">
-        <a-card title="应用信息" :bordered="false">
-          <template #extra>
-            <a-button type="primary" size="small" @click="openEdit">编辑</a-button>
-          </template>
-          <a-descriptions :column="2" bordered>
-            <a-descriptions-item label="应用名称">
-              {{ appInfo.appName || '暂无数据' }}
-            </a-descriptions-item>
-            <a-descriptions-item label="应用编码">
-              {{ appInfo.appCode || '暂无数据' }}
-            </a-descriptions-item>
-            <a-descriptions-item label="应用类型">
-              <template v-if="appInfo.appType">
-                <a-tag :color="getAppTypeColor(appInfo.appType)">
-                  {{ getAppTypeText(appInfo.appType) }}
-                </a-tag>
-              </template>
-              <template v-else>
-                暂无数据
-              </template>
-            </a-descriptions-item>
-            <a-descriptions-item label="应用状态">
-              <!-- 注意：0 是有效值（禁用），不能用简单的 truthy 判断 -->
-              <template v-if="appInfo.status !== null && appInfo.status !== undefined">
-                <a-tag :color="getStatusColor(appInfo.status)">
-                  {{ getStatusText(appInfo.status) }}
-                </a-tag>
-              </template>
-              <template v-else>
-                暂无数据
-              </template>
-            </a-descriptions-item>
-            <a-descriptions-item label="负责人">
-              {{ appInfo.owner || '暂无数据' }}
-            </a-descriptions-item>
-            <a-descriptions-item label="创建时间">
-              {{ appInfo.createTime || '暂无数据' }}
-            </a-descriptions-item>
-            <a-descriptions-item label="最后更新">
-              {{ appInfo.updateTime || '暂无数据' }}
-            </a-descriptions-item>
-            <a-descriptions-item label="版本号">
-              {{ appInfo.version || '暂无数据' }}
-            </a-descriptions-item>
-            <!-- 为避免 Descriptions 行列跨度不匹配的告警，此处占满一行 -->
-            <a-descriptions-item label="Git仓库地址" :span="2">
-              <template v-if="appInfo.gitInfo && appInfo.gitInfo.repoUrl">
-                <a :href="appInfo.gitInfo.repoUrl" target="_blank">
-                  {{ appInfo.gitInfo.repoUrl }}
-                </a>
-              </template>
-              <template v-else>
-                暂无数据
-              </template>
-            </a-descriptions-item>
-            <a-descriptions-item label="技术栈" :span="2">
-              <template v-if="appInfo.techStack && appInfo.techStack.length">
-                <div class="tech-stack-tags">
-                  <a-tag 
-                    v-for="tech in appInfo.techStack" 
-                    :key="tech.name" 
-                    class="tech-tag"
-                    color="blue"
-                  >
-                    <Icon :icon="tech.icon" :size="14" style="margin-right: 4px;" />
-                    {{ tech.name }} {{ tech.version }}
-                  </a-tag>
-                </div>
-              </template>
-              <template v-else-if="appInfo.extra && appInfo.extra.techStackText">
-                {{ appInfo.extra.techStackText }}
-              </template>
-              <template v-else>
-                暂无数据
-              </template>
-            </a-descriptions-item>
-            <a-descriptions-item label="备注" :span="2">
-              <template v-if="appInfo.extra && appInfo.extra.remarks">
-                {{ appInfo.extra.remarks }}
-              </template>
-              <template v-else>
-                暂无数据
-              </template>
-            </a-descriptions-item>
-          </a-descriptions>
-        </a-card>
-      </a-col>
-    </a-row>
-
-      <!-- 依赖信息（暂不展示） -->
-      <a-row v-if="showDependencies" :gutter="24" class="mt-4">
-        <a-col :span="24">
-          <a-card title="依赖信息" :bordered="false">
-            <div v-if="packageJsonLoading" class="loading-container">
-              <a-spin size="large" />
-              <div class="loading-text">正在加载依赖信息...</div>
-            </div>
-            <div v-else-if="packageJsonError" class="error-container">
-              <a-alert type="error" :message="packageJsonError" show-icon />
-            </div>
-            <div v-else-if="packageJsonData">
-              <a-tabs v-model:activeKey="dependencyTabKey" type="card">
-                <!-- 生产依赖 -->
-                <a-tab-pane key="dependencies" :tab="`生产依赖 (${getDependencyCount('dependencies')})`">
-                  <div class="dependency-section">
-                    <div class="dependency-header">
-                      <span class="dependency-title">
-                        <Icon icon="ant-design:package-outlined" :size="18" />
-                        生产环境依赖包
-                      </span>
-                      <a-button type="link" @click="copyDependencies('dependencies')" size="small">
-                        <Icon icon="ant-design:copy-outlined" :size="16" />
-                        复制依赖列表
-                      </a-button>
-                    </div>
-                    <a-descriptions 
-                      :column="{ xxl: 3, xl: 3, lg: 2, md: 2, sm: 1, xs: 1 }"
-                      size="small"
-                      bordered
-                      class="dependency-descriptions"
-                    >
-                      <a-descriptions-item 
-                        v-for="(version, name) in packageJsonData.dependencies" 
-                        :key="name"
-                        :label="name"
-                      >
-                        <a-tag color="blue">{{ version }}</a-tag>
-                      </a-descriptions-item>
-                    </a-descriptions>
-                  </div>
-                </a-tab-pane>
-
-                <!-- 开发依赖 -->
-                <a-tab-pane key="devDependencies" :tab="`开发依赖 (${getDependencyCount('devDependencies')})`">
-                  <div class="dependency-section">
-                    <div class="dependency-header">
-                      <span class="dependency-title">
-                        <Icon icon="ant-design:tool-outlined" :size="18" />
-                        开发环境依赖包
-                      </span>
-                      <a-button type="link" @click="copyDependencies('devDependencies')" size="small">
-                        <Icon icon="ant-design:copy-outlined" :size="16" />
-                        复制依赖列表
-                      </a-button>
-                    </div>
-                    <a-descriptions 
-                      :column="{ xxl: 3, xl: 3, lg: 2, md: 2, sm: 1, xs: 1 }"
-                      size="small"
-                      bordered
-                      class="dependency-descriptions"
-                    >
-                      <a-descriptions-item 
-                        v-for="(version, name) in packageJsonData.devDependencies" 
-                        :key="name"
-                        :label="name"
-                      >
-                        <a-tag color="orange">{{ version }}</a-tag>
-                      </a-descriptions-item>
-                    </a-descriptions>
-                  </div>
-                </a-tab-pane>
-
-                <!-- 可选依赖 -->
-                <a-tab-pane key="optionalDependencies" :tab="`可选依赖 (${getDependencyCount('optionalDependencies')})`" v-if="packageJsonData.optionalDependencies">
-                  <div class="dependency-section">
-                    <div class="dependency-header">
-                      <span class="dependency-title">
-                        <Icon icon="ant-design:question-circle-outlined" :size="18" />
-                        可选依赖包
-                      </span>
-                      <a-button type="link" @click="copyDependencies('optionalDependencies')" size="small">
-                        <Icon icon="ant-design:copy-outlined" :size="16" />
-                        复制依赖列表
-                      </a-button>
-                    </div>
-                    <a-descriptions 
-                      :column="{ xxl: 3, xl: 3, lg: 2, md: 2, sm: 1, xs: 1 }"
-                      size="small"
-                      bordered
-                      class="dependency-descriptions"
-                    >
-                      <a-descriptions-item 
-                        v-for="(version, name) in packageJsonData.optionalDependencies" 
-                        :key="name"
-                        :label="name"
-                      >
-                        <a-tag color="purple">{{ version }}</a-tag>
-                      </a-descriptions-item>
-                    </a-descriptions>
-                  </div>
-                </a-tab-pane>
-
-                <!-- 同级依赖 -->
-                <a-tab-pane key="peerDependencies" :tab="`同级依赖 (${getDependencyCount('peerDependencies')})`" v-if="packageJsonData.peerDependencies">
-                  <div class="dependency-section">
-                    <div class="dependency-header">
-                      <span class="dependency-title">
-                        <Icon icon="ant-design:share-alt-outlined" :size="18" />
-                        同级依赖包
-                      </span>
-                      <a-button type="link" @click="copyDependencies('peerDependencies')" size="small">
-                        <Icon icon="ant-design:copy-outlined" :size="16" />
-                        复制依赖列表
-                      </a-button>
-                    </div>
-                    <a-descriptions 
-                      :column="{ xxl: 3, xl: 3, lg: 2, md: 2, sm: 1, xs: 1 }"
-                      size="small"
-                      bordered
-                      class="dependency-descriptions"
-                    >
-                      <a-descriptions-item 
-                        v-for="(version, name) in packageJsonData.peerDependencies" 
-                        :key="name"
-                        :label="name"
-                      >
-                        <a-tag color="green">{{ version }}</a-tag>
-                      </a-descriptions-item>
-                    </a-descriptions>
-                  </div>
-                </a-tab-pane>
-              </a-tabs>
-            </div>
-            <div v-else class="no-data-container">
-              <a-empty description="未找到 package.json 文件" />
-            </div>
-          </a-card>
-        </a-col>
-      </a-row>
+    <a-card title="应用信息" :bordered="false">
+      <template #extra>
+        <a-button type="primary" size="small" @click="startEditExtraInfo">编辑详细信息</a-button>
+      </template>
       
-      <!-- 编辑弹窗 -->
-      <a-modal
-        v-model:visible="editVisible"
-        title="编辑应用信息"
-        :destroyOnClose="true"
-        @ok="handleEditOk"
-        @cancel="handleEditCancel"
-        :width="720"
-      >
-        <a-form :model="editModel" layout="vertical" class="edit-form" style="width: 80%; max-width: none;margin:0 auto;">
-          <a-row :gutter="[16, 8]">
-            <a-col :span="12">
-              <a-form-item label="应用名称" name="appName">
-                <a-input v-model:value="editModel.appName" placeholder="请输入应用名称" />
-              </a-form-item>
-            </a-col>
-            <a-col :span="12">
-              <a-form-item label="应用编码" name="appCode">
-                <a-input v-model:value="editModel.appCode" placeholder="请输入应用编码" />
-              </a-form-item>
-            </a-col>
-          
-            <a-col :span="12">
-              <a-form-item label="应用类型" name="appType">
-                <a-select v-model:value="editModel.appType" placeholder="请选择应用类型">
-                  <a-select-option value="web">Web应用</a-select-option>
-                  <a-select-option value="mobile">移动应用</a-select-option>
-                  <a-select-option value="desktop">桌面应用</a-select-option>
-                  <a-select-option value="api">API服务</a-select-option>
-                </a-select>
-              </a-form-item>
-            </a-col>
-            <a-col :span="12">
-              <a-form-item label="应用状态" name="status">
-                <!-- 后端为数字：0(禁用)、1(启用) -->
-                <a-select v-model:value="editModel.status" placeholder="请选择状态">
-                  <a-select-option :value="1">启用</a-select-option>
-                  <a-select-option :value="0">禁用</a-select-option>
-                </a-select>
-              </a-form-item>
-            </a-col>
-          
-            <a-col :span="12">
-              <a-form-item label="负责人" name="owner">
-                <a-input v-model:value="editModel.owner" placeholder="请输入负责人" />
-              </a-form-item>
-            </a-col>
-            <a-col :span="12">
-              <a-form-item label="版本号" name="version">
-                <a-input v-model:value="editModel.version" placeholder="请输入版本号" />
-              </a-form-item>
-            </a-col>
-          
-            <a-col :span="24">
-              <a-form-item label="应用描述" name="description">
-                <a-textarea v-model:value="editModel.description" placeholder="请输入描述" rows="3" />
-              </a-form-item>
-            </a-col>
-            <a-col :span="24">
-              <a-form-item label="Git 仓库地址" name="gitUrl">
-                <a-input v-model:value="editModel.gitUrl" placeholder="请输入仓库地址" />
-              </a-form-item>
-            </a-col>
-            <a-col :span="24">
-              <a-form-item label="技术栈（附加）" name="techStackText">
-                <a-textarea v-model:value="editModel.techStackText" placeholder="例如：Vue3 + Vite + TypeScript + Ant Design Vue" rows="2" />
-              </a-form-item>
-            </a-col>
-            <a-col :span="24">
-              <a-form-item label="备注（附加）" name="remarks">
-                <a-textarea v-model:value="editModel.remarks" placeholder="请输入备注信息（如依赖说明、部署注意事项等）" rows="3" />
-              </a-form-item>
-            </a-col>
-          </a-row>
-        </a-form>
-      </a-modal>
-    </div>
-  </template>
+      <a-descriptions :column="2" bordered class="info-descriptions">
+        <a-descriptions-item label="应用简称">
+          {{ appInfo.appName || '暂无数据' }}
+        </a-descriptions-item>
+        <a-descriptions-item label="所属领域">
+          {{ getDomainText(appInfo.domain) }}
+        </a-descriptions-item>
+        <a-descriptions-item label="Git地址">
+          <template v-if="appInfo.gitUrl">
+            <a :href="appInfo.gitUrl" target="_blank">{{ appInfo.gitUrl }}</a>
+          </template>
+          <template v-else>
+            暂无数据
+          </template>
+        </a-descriptions-item>
+        <a-descriptions-item label="创建人">
+          {{ getPersonName(appInfo.createBy) || '暂无数据' }}
+        </a-descriptions-item>
+        <a-descriptions-item label="应用负责人">
+          {{ getPersonsName(appInfo.managers) || '暂无数据' }}
+        </a-descriptions-item>
+        <a-descriptions-item label="应用描述" :span="2">
+          {{ appInfo.appDescription || '暂无数据' }}
+        </a-descriptions-item>
+        <a-descriptions-item label="创建时间">
+          {{ appInfo.createTime || '暂无数据' }}
+        </a-descriptions-item>
+        <a-descriptions-item label="更新时间">
+          {{ appInfo.updateTime || '暂无数据' }}
+        </a-descriptions-item>
+        <a-descriptions-item label="详细信息" :span="1" v-if="!isEditingExtraInfo">
+          {{ appInfo.extra_info || '暂无数据' }}
+        </a-descriptions-item>
+      </a-descriptions>
+      
+      <!-- 详细信息字段，使用textarea进行编辑 -->
+      <div v-if="isEditingExtraInfo" class="extra-info-section">
+        <h3 class="section-title">编辑详细信息</h3>
+        <div class="extra-info-content">
+          <a-textarea 
+            v-model:value="editExtraInfoModel" 
+            rows="10" 
+            placeholder="请输入详细信息"
+            class="extra-info-textarea"
+          />
+          <div class="editor-actions">
+            <a-button type="primary" @click="saveExtraInfo" :loading="saving">保存</a-button>
+            <a-button @click="cancelEditExtraInfo">取消</a-button>
+          </div>
+        </div>
+      </div>
+    </a-card>
+  </div>
+</template>
 
 <script lang="ts" setup>
-import { ref, onMounted, h } from 'vue';
-import Icon from '/@/components/Icon';
-import { useCopyToClipboard } from '@/hooks/web/useCopyToClipboard';
-import { useMessage } from '@/hooks/web/useMessage';
-import { getAppPackageJson, editApp, syncGitRepoInfo, getGitRepoInfo } from '../AppManage.api';
+import { ref, watch, onMounted } from 'vue';
+import { useMessage } from '/@/hooks/web/useMessage';
+import { editApp, getActiveStaffList, getUserList, getDomainDict } from '../AppManage.api';
 
-/**
- * 应用信息接口定义
- */
-interface AppInfo {
-  appName: string;
-  appCode: string;
-  appType: string;
-  // 后端为数字(0:禁用,1:启用)，兼容历史字符串
-  status: number | string | null;
-  owner: string;
-  createTime: string;
-  updateTime: string;
-  version: string;
-  description: string;
-  techStack: Array<{
-    name: string;
-    version: string;
-    icon: string;
-  }>;
-  // 解析自后端大字段 extraInfo 的附加信息
-  extra?: {
-    techStackText?: string;
-    remarks?: string;
-  };
-  environments: Array<{
-    name: string;
-    url: string;
-    status: string;
-  }>;
-  gitInfo: {
-    repoUrl: string;
-    defaultBranch: string;
-    // 后端字段为 lastCommitSha 与 lastCommitMessage，这里同时保留聚合字段 lastCommit
-    lastCommit: string;
-    lastCommitSha?: string;
-    lastCommitMessage?: string;
-    lastCommitter: string;
-    lastCommitTime: string;
-    branchCount: number;
-  };
-}
-
-/**
- * Package.json 数据接口定义
- */
-interface PackageJsonData {
-  name?: string;
-  version?: string;
-  dependencies?: Record<string, string>;
-  devDependencies?: Record<string, string>;
-  optionalDependencies?: Record<string, string>;
-  peerDependencies?: Record<string, string>;
-}
-
+// Props定义
 const props = defineProps<{
   appId: string;
   appDetail: any;
 }>();
 
-// 剪贴板和消息
-const { clipboardRef, isSuccessRef } = useCopyToClipboard();
-const { createMessage } = useMessage();
-
-// 依赖信息相关状态
-const packageJsonData = ref<PackageJsonData | null>(null);
-const packageJsonLoading = ref(false);
-const packageJsonError = ref<string | null>(null);
-const dependencyTabKey = ref('dependencies');
-// 控制依赖信息展示（当前需求：暂时不展示）
-const showDependencies = ref(false);
-
-// 表格列定义
-const dependencyColumns = [
-  {
-    title: '包名',
-    dataIndex: 'name',
-    key: 'name',
-    width: '60%',
-    ellipsis: true,
-  },
-  {
-    title: '版本',
-    dataIndex: 'version',
-    key: 'version',
-    width: '40%',
-    customRender: ({ record }) => {
-      const colorMap = {
-        dependencies: 'blue',
-        devDependencies: 'orange',
-        optionalDependencies: 'purple',
-        peerDependencies: 'green',
-      };
-      return h('a-tag', { color: colorMap[record.type] || 'default' }, record.version);
-    },
-  },
-];
-
-/**
- * 获取依赖数量
- * @param type 依赖类型
- */
-function getDependencyCount(type: string): number {
-  if (!packageJsonData.value || !packageJsonData.value[type]) return 0;
-  return Object.keys(packageJsonData.value[type]).length;
-}
-
-/**
- * 获取表格数据
- * @param type 依赖类型
- */
-function getDependencyTableData(type: string) {
-  if (!packageJsonData.value || !packageJsonData.value[type]) return [];
-  
-  return Object.entries(packageJsonData.value[type]).map(([name, version]) => ({
-    key: name,
-    name,
-    version,
-    type,
-  }));
-}
-
-/**
- * 复制依赖列表
- * @param type 依赖类型
- */
-function copyDependencies(type: string) {
-  if (!packageJsonData.value || !packageJsonData.value[type]) return;
-  
-  const dependencies = Object.entries(packageJsonData.value[type])
-    .map(([name, version]) => `${name}@${version}`)
-    .join('\n');
-  
-  copy(dependencies);
-  }
-/**
- * 复制文本到剪贴板
- * @param text 要复制的文本
- */
-function copy(text: string) {
-  clipboardRef.value = text;
-  if (isSuccessRef.value) {
-    createMessage.success('复制成功');
-  } else {
-    createMessage.error('复制失败');
-  }
-}
-const appInfo = ref<AppInfo>({
-  appName: props.appDetail?.appName || '',
-  appCode: props.appDetail?.appCode || '',
-  appType: props.appDetail?.appType || '',
-  // 0 是有效值，这里用 null 作为“未知/未设置”的占位
-  status: props.appDetail?.status ?? null,
-  owner: props.appDetail?.owner || '',
-  createTime: props.appDetail?.createTime || '',
-  updateTime: props.appDetail?.updateTime || '',
-  version: props.appDetail?.version || '',
-  description: props.appDetail?.description || '',
-  techStack: props.appDetail?.techStack || [],
-  extra: (() => {
-    try {
-      const raw = props.appDetail?.extraInfo || props.appDetail?.extra_info;
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) {
-      return {};
-    }
-  })(),
-  environments: props.appDetail?.environments || [],
-  gitInfo: {
-    repoUrl: props.appDetail?.gitUrl || '',
-    defaultBranch: props.appDetail?.defaultBranch || '',
-    lastCommit: props.appDetail?.lastCommit || '',
-    lastCommitter: props.appDetail?.lastCommitter || '',
-    lastCommitTime: props.appDetail?.lastCommitTime || '',
-    branchCount: props.appDetail?.branchCount || 0,
-  },
-});
-
-// Git仓库信息同步状态
-const syncLoading = ref(false);
-
-// 编辑相关
-const editVisible = ref(false);
-const editModel = ref<any>({});
+// Emits定义
 const emit = defineEmits(['save']);
 
-function openEdit() {
-  // 初始化编辑模型
-  editModel.value = {
-    appName: appInfo.value.appName,
-    appCode: appInfo.value.appCode,
-    appType: appInfo.value.appType,
-    status: appInfo.value.status,
-    owner: appInfo.value.owner,
-    version: appInfo.value.version,
-    description: appInfo.value.description,
-    gitUrl: appInfo.value.gitInfo?.repoUrl || '',
-    techStackText: appInfo.value.extra?.techStackText || '',
-    remarks: appInfo.value.extra?.remarks || '',
-  };
-  editVisible.value = true;
-}
+// 消息提示
+const { createMessage } = useMessage();
 
-async function handleEditOk() {
-  // 构建提交数据（与后端实体字段保持一致），统一使用编辑接口
-  const submitData: any = {
-    // 使用 props.appId 作为主键ID，兜底使用 props.appDetail.id
-    id: props.appId || props.appDetail?.id,
-    // 保留原有字段，避免后端更新为 null
-    ...(props.appDetail || {}),
-    // 覆盖需要更新的基础信息字段
-    appName: editModel.value.appName || '',
-    appCode: editModel.value.appCode || '',
-    appType: editModel.value.appType || '',
-    // 确保提交给后端的是数字(0/1)
-    status: (editModel.value.status !== undefined && editModel.value.status !== null && editModel.value.status !== '')
-      ? Number(editModel.value.status)
-      : (props.appDetail?.status ?? undefined),
-    owner: editModel.value.owner || '',
-    version: editModel.value.version || '',
-    // 后端实体使用 appDescription 字段
-    appDescription: editModel.value.description || '',
-    // Git 仓库地址字段为 gitUrl
-    gitUrl: editModel.value.gitUrl || '',
-    // 新增：附加信息（保存为JSON字符串）
-    extraInfo: JSON.stringify({
-      techStackText: editModel.value.techStackText || '',
-      remarks: editModel.value.remarks || '',
-    }),
-  };
+// 缓存：领域字典与人员映射
+const domainMapRef = ref<Map<string, string>>(new Map());
+const staffIdToNameRef = ref<Map<string, string>>(new Map());
+const staffUsernameToNameRef = ref<Map<string, string>>(new Map());
+// 系统用户映射
+const userIdToNameRef = ref<Map<string, string>>(new Map());
+const userUsernameToNameRef = ref<Map<string, string>>(new Map());
 
+// 加载人员映射数据
+const loadStaffMaps = async () => {
   try {
-    const result = await editApp(submitData);
-    if (result?.success) {
-      const newDetail = result?.result || submitData;
-      // 同步本地展示数据（映射到 BasicInfo 的 appInfo 结构）
-      appInfo.value.appName = newDetail.appName || '';
-      appInfo.value.appCode = newDetail.appCode || '';
-      appInfo.value.appType = newDetail.appType || '';
-      // 后端返回为数字，直接赋值
-      appInfo.value.status = (typeof newDetail.status === 'number') ? newDetail.status : Number(newDetail.status);
-      appInfo.value.owner = newDetail.owner || '';
-      appInfo.value.version = newDetail.version || '';
-      // 兼容后端返回 appDescription 字段
-      appInfo.value.description = newDetail.appDescription || newDetail.description || '';
-      appInfo.value.gitInfo = {
-        ...(appInfo.value.gitInfo || {}),
-        repoUrl: newDetail.gitUrl || editModel.value.gitUrl || '',
-      };
+    const [staffRes, userRes] = await Promise.all([
+      getActiveStaffList({ pageNo: 1, pageSize: 1000 }),
+      getUserList({ pageNo: 1, pageSize: 1000 })
+    ]);
+    
+    // 处理staff数据
+    const staffRows = staffRes?.records || [];
+    const id2name = new Map<string, string>();
+    const username2name = new Map<string, string>();
+    
+    staffRows.forEach((u: any) => {
+      if (!u) return;
+      const id = u.id != null ? String(u.id) : undefined;
+      const username = u.username != null ? String(u.username) : undefined;
+      const name = u.name || '';
+      if (id) id2name.set(id, name);
+      if (username) username2name.set(username, name);
+    });
+    
+    staffIdToNameRef.value = id2name;
+    staffUsernameToNameRef.value = username2name;
+    
+    // 处理user数据
+    const userRows = userRes?.result?.records || userRes?.result || [];
+    const userId2name = new Map<string, string>();
+    const userUsername2name = new Map<string, string>();
+    
+    userRows.forEach((u: any) => {
+      if (!u) return;
+      const id = u.id != null ? String(u.id) : undefined;
+      const username = u.username != null ? String(u.username) : undefined;
+      const name = u.realname || u.name || u.nickname || u.label || u.text || username || id || '';
+      if (id) userId2name.set(id, name);
+      if (username) userUsername2name.set(username, name);
+    });
+    
+    userIdToNameRef.value = userId2name;
+    userUsernameToNameRef.value = userUsername2name;
+  } catch (e) {
+    console.warn('加载人员映射失败', e);
+  }
+};
 
-      // 更新附加信息展示
-      try {
-        const raw = newDetail.extraInfo || newDetail.extra_info || submitData.extraInfo;
-        appInfo.value.extra = raw ? JSON.parse(raw) : {};
-      } catch (e) {
-        appInfo.value.extra = {
-          techStackText: editModel.value.techStackText || '',
-          remarks: editModel.value.remarks || '',
-        };
+// 获取人员名称
+const getPersonName = (key: string): string => {
+  const id2name = new Map([...staffIdToNameRef.value, ...userIdToNameRef.value]);
+  const username2name = new Map([...staffUsernameToNameRef.value, ...userUsernameToNameRef.value]);
+  
+  return id2name.get(key) || username2name.get(key) || key || '-';
+};
+
+// 获取多人员名称（逗号分隔）
+const getPersonsName = (keys: string | string[]): string => {
+  if (!keys) return '-';
+  
+  const idsArr = Array.isArray(keys)
+    ? keys
+    : String(keys).split(',').map(s => s.trim()).filter(Boolean);
+  
+  return idsArr.map(key => getPersonName(key)).join(', ') || '-';
+};
+
+// 加载领域字典
+const loadDomainMap = async () => {
+  try {
+    const resp = await getDomainDict();
+    const items = resp?.result || resp || [];
+    const map = new Map<string, string>();
+    (items || []).forEach((it: any) => {
+      if (it && (it.value != null)) {
+        map.set(String(it.value), it.text || it.label || it.title || String(it.value));
       }
-
-      // 通知父组件保存成功（方便刷新详情）
-      emit('save', newDetail);
-      createMessage.success('编辑成功');
-      editVisible.value = false;
-    } else {
-      createMessage.error(result?.message || '编辑失败');
-    }
-  } catch (error) {
-    console.error('编辑应用失败:', error);
-    createMessage.error('编辑失败');
-  }
-}
-
-function handleEditCancel() {
-  editVisible.value = false;
-}
-
-/**
- * 获取初始化命令标题
- */
-const getInitCommandTitle = () => {
-  if (!props.appDetail) return '初始化命令';
-  
-  if (props.appDetail.templateType === 'application') {
-    return '应用模板初始化命令';
-  } else {
-    return 'Git仓库下载命令';
+    });
+    domainMapRef.value = map;
+  } catch (e) {
+    console.warn('加载领域字典失败', e);
   }
 };
 
-/**
- * 获取初始化命令
- */
-const getInitCommand = () => {
-  if (!props.appDetail) return '';
-  
-  // 如果有自定义命令，直接返回
-  if (props.appDetail.initCommand) {
-    return props.appDetail.initCommand;
-  }
-  
-  // 根据模板类型生成默认命令
-  if (props.appDetail.templateType === 'application') {
-    return `npm init jeecg-app ${props.appDetail.appName} --template=${props.appDetail.templateId}`;
-  } else {
-    // 空白模板，返回Git克隆命令
-    if (props.appDetail.gitUrl) {
-      return `git clone ${props.appDetail.gitUrl}`;
-    } else {
-      return 'git clone https://github.com/jeecgboot/jeecg-boot-vue3.git';
-    }
-  }
+// 加载所有映射数据
+const loadAllMaps = async () => {
+  await Promise.all([loadStaffMaps(), loadDomainMap()]);
 };
 
-/**
- * 获取初始化命令描述
- */
-const getInitCommandDesc = () => {
-  if (!props.appDetail) return '';
-  
-  if (props.appDetail.templateType === 'application') {
-    return '使用此命令初始化应用模板，将创建基于选定模板的新应用。';
-  } else {
-    return '使用此命令从Git仓库下载应用代码，然后可以进行自定义开发。';
-  }
-};
 
-/**
- * 复制初始化命令
- */
-const copyInitCommand = async () => {
-  const command = getInitCommand();
-  if (command) {
-    await copy(command);
-    createMessage.success('命令已复制到剪贴板');
-  }
-};
-
-/**
- * 获取应用类型颜色
- */
-const getAppTypeColor = (type: string) => {
-  const colorMap: Record<string, string> = {
-    web: 'blue',
-    mobile: 'green',
-    desktop: 'purple',
-    api: 'orange',
-  };
-  return colorMap[type] || 'default';
-};
-
-/**
- * 获取应用类型文本
- */
-const getAppTypeText = (type: string) => {
-  const textMap: Record<string, string> = {
-    web: 'Web应用',
-    mobile: '移动应用',
-    desktop: '桌面应用',
-    api: 'API服务',
-  };
-  return textMap[type] || type;
-};
-
-/**
- * 获取状态颜色
- */
-const getStatusColor = (status: number | string | null) => {
-  // 数字状态：0(禁用)红色，1(启用)绿色
-  if (status === 0 || status === '0') return 'red';
-  if (status === 1 || status === '1') return 'green';
-  // 历史字符串状态兼容
-  const colorMap: Record<string, string> = {
-    running: 'green',
-    stopped: 'red',
-    pending: 'orange',
-    enabled: 'green',
-    disabled: 'red',
-  };
-  return colorMap[String(status)] || 'default';
-};
-
-/**
- * 获取状态文本
- */
-const getStatusText = (status: number | string | null) => {
-  // 数字状态：0(禁用)、1(启用)
-  if (status === 0 || status === '0') return '禁用';
-  if (status === 1 || status === '1') return '启用';
-  // 历史字符串状态兼容
-  const textMap: Record<string, string> = {
-    running: '运行中',
-    stopped: '已停止',
-    pending: '待部署',
-    enabled: '启用',
-    disabled: '禁用',
-  };
-  return textMap[String(status)] || String(status);
-};
-
-/**
- * 加载应用信息
- */
-const loadAppInfo = async () => {
-  // TODO: 调用API获取应用详细信息
-  console.log('Loading app info for:', props.appId);
-};
-
-/**
- * 加载 package.json 依赖信息
- */
-const loadPackageJsonData = async () => {
-  if (!props.appId) return;
-  
-  packageJsonLoading.value = true;
-  packageJsonError.value = null;
-  
-  try {
-    const result = await getAppPackageJson(props.appId);
-    if (result.success) {
-      packageJsonData.value = result.result;
-    } else {
-      packageJsonError.value = result.message || '获取依赖信息失败';
-    }
-  } catch (error) {
-    console.error('获取 package.json 失败:', error);
-    packageJsonError.value = '获取依赖信息失败，请稍后重试';
-  } finally {
-    packageJsonLoading.value = false;
-  }
-};
-
+// 组件挂载时加载所有映射数据
 onMounted(() => {
-  loadAppInfo();
-  // 页面初始化时加载已持久化的 Git 仓库信息
-  loadGitRepoInfo();
-  // 依赖信息暂不展示，避免不必要的接口调用
-  if (showDependencies.value) {
-    loadPackageJsonData();
-  }
+  loadAllMaps();
 });
 
-/**
- * 同步 Git 仓库详细信息并持久化，后续同步为更新
- */
-const syncGitInfo = async () => {
-  if (!props.appId) {
-    return createMessage.warning('缺少应用ID，无法同步');
-  }
-  syncLoading.value = true;
+// 处理extra_info函数 - 移到使用之前定义
+const processExtraInfo = (extraInfo: any): string => {
+  if (!extraInfo) return '';
   try {
-    const res = await syncGitRepoInfo(props.appId);
-    if (res && res.success) {
-      const info = res.result || {};
-      // 更新前端展示数据
-      appInfo.value.gitInfo = {
-        repoUrl: info.htmlUrl || appInfo.value.gitInfo?.repoUrl || props.appDetail?.gitUrl || '',
-        defaultBranch: info.defaultBranch || '',
-        lastCommit: `${info.lastCommitSha || ''}${info.lastCommitSha ? ' ' : ''}${info.lastCommitMessage || ''}`.trim(),
-        lastCommitSha: info.lastCommitSha || '',
-        lastCommitMessage: info.lastCommitMessage || '',
-        lastCommitter: info.lastCommitter || '',
-        lastCommitTime: info.lastCommitTime || '',
-        branchCount: info.branchCount || 0,
+    // 如果是对象，转换为字符串
+    if (typeof extraInfo === 'object') {
+      return JSON.stringify(extraInfo, null, 2);
+    }
+    return String(extraInfo);
+  } catch (error) {
+    console.error('处理extra_info失败:', error);
+    return '';
+  }
+}
+
+// 应用信息状态
+const appInfo = ref({
+  appName: props.appDetail?.appName || '',
+  domain: props.appDetail?.domain || '',
+  gitUrl: props.appDetail?.gitUrl || '',
+  createBy: props.appDetail?.createBy || '',
+  managers: props.appDetail?.managers || '',
+  appDescription: props.appDetail?.appDescription || '',
+  createTime: props.appDetail?.createTime || '',
+  updateTime: props.appDetail?.updateTime || '',
+  extra_info: processExtraInfo(props.appDetail?.extra_info)
+});
+
+// 编辑状态
+const isEditingExtraInfo = ref(false);
+const editExtraInfoModel = ref('');
+const saving = ref(false);
+
+// 监听appDetail变化，更新appInfo
+watch(() => props.appDetail, (newDetail) => {
+  if (newDetail) {
+    appInfo.value = {
+      appName: newDetail.appName || '',
+      domain: newDetail.domain || '',
+      gitUrl: newDetail.gitUrl || '',
+      createBy: newDetail.createBy || '',
+      managers: newDetail.managers || '',
+      appDescription: newDetail.appDescription || '',
+      createTime: newDetail.createTime || '',
+      updateTime: newDetail.updateTime || '',
+      extra_info: processExtraInfo(newDetail.extra_info)
+    };
+    
+    // 如果当前正在编辑状态，同步更新编辑模型
+    if (isEditingExtraInfo.value) {
+      editExtraInfoModel.value = appInfo.value.extra_info;
+    }
+    
+    // 重新加载所有映射数据
+    loadAllMaps();
+  }
+}, { deep: true });
+
+// 获取领域文本
+function getDomainText(domain?: string): string {
+  const domainCode = domain != null ? String(domain) : '';
+  return domainMapRef.value.get(domainCode) || domainCode || '未分类';
+}
+
+// 开始编辑详细信息
+const startEditExtraInfo = () => {
+  if (!appInfo.value || (!props.appId && !props.appDetail?.id)) {
+    createMessage.error('应用信息不存在或未加载完成');
+    return;
+  }
+  // 确保正确初始化编辑模型
+  const currentExtraInfo = appInfo.value.extra_info || '';
+  editExtraInfoModel.value = String(currentExtraInfo);
+  console.log('编辑模式开始，初始值:', editExtraInfoModel.value);
+  isEditingExtraInfo.value = true;
+}
+
+// 取消编辑
+const cancelEditExtraInfo = () => {
+  editExtraInfoModel.value = '';
+  isEditingExtraInfo.value = false;
+}
+
+// 保存详细信息
+const saveExtraInfo = async () => {
+  const appId = props.appId || props.appDetail?.id;
+  if (!appInfo.value || !appId) {
+    createMessage.error('应用信息不存在或未加载完成');
+    return;
+  }
+  
+  saving.value = true;
+  try {
+    // 直接使用editExtraInfoModel的值，v-model已经保证它实时获取用户输入
+    const newExtraInfo = editExtraInfoModel.value;
+    console.log(newExtraInfo, 'newExtraInfo====');
+    
+    const submitData = {
+      id: appId,
+      extra_info: newExtraInfo
+    };
+    
+    // 安全地调用API并检查结果
+    const result = await editApp(submitData);
+    
+    // 增加对result的明确判断
+    if (result && result.success) {
+      const newDetail = result.result || submitData;
+      // 更新本地显示
+      appInfo.value.extra_info = newExtraInfo;
+      
+      // 通知父组件并传递完整的新数据
+      const updatedDetail = {
+        ...(props.appDetail || {}),
+        ...newDetail
       };
-      createMessage.success('Git 仓库信息同步成功');
+      emit('save', updatedDetail);
+      
+      createMessage.success('保存成功');
+      isEditingExtraInfo.value = false;
+      editExtraInfoModel.value = '';
     } else {
-      createMessage.error(res?.message || '同步失败');
+      // 处理失败情况
+      createMessage.error(typeof result === 'object' && result !== null ? result.message || '保存失败' : '保存失败');
     }
-  } catch (e) {
-    console.error('同步 Git 仓库失败:', e);
-    createMessage.error('同步失败，请检查后端服务或令牌配置');
+  } catch (error) {
+    // 全面的错误处理
+    console.error('保存详细信息失败:', error);
+    if (error && typeof error === 'object' && 'message' in error) {
+      createMessage.error(String(error.message));
+    } else if (typeof error === 'string') {
+      createMessage.error(error);
+    } else {
+      createMessage.error('保存失败');
+    }
   } finally {
-    syncLoading.value = false;
+    saving.value = false;
   }
-};
-
-/**
- * 初始化加载已持久化的 Git 仓库信息
- */
-const loadGitRepoInfo = async () => {
-  if (!props.appId) return;
-  try {
-    const res = await getGitRepoInfo(props.appId);
-    if (res && res.success) {
-      const info = res.result || {};
-      appInfo.value.gitInfo = {
-        repoUrl: info.htmlUrl || appInfo.value.gitInfo?.repoUrl || props.appDetail?.gitUrl || '',
-        defaultBranch: info.defaultBranch || '',
-        lastCommit: `${info.lastCommitSha || ''}${info.lastCommitSha ? ' ' : ''}${info.lastCommitMessage || ''}`.trim(),
-        lastCommitSha: info.lastCommitSha || '',
-        lastCommitMessage: info.lastCommitMessage || '',
-        lastCommitter: info.lastCommitter || '',
-        lastCommitTime: info.lastCommitTime || '',
-        branchCount: info.branchCount || 0,
-      };
-    }
-  } catch (e) {
-    // 保持静默失败，页面显示“暂无数据”
-    console.warn('初始化加载 Git 仓库信息失败:', e);
-  }
-};
-
+}
 </script>
 
-<style lang="less" scoped>
-.basic-info {
-  .tech-stack-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    
-    .tech-tag {
-      display: inline-flex;
-      align-items: center;
-      margin: 0;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      
-      .anticon {
-        margin-right: 4px;
-      }
-    }
-  }
-
-  .tech-stack {
-    .tech-item {
-      display: flex;
-      align-items: center;
-      margin-bottom: 12px;
-      padding: 8px;
-      background: #fafafa;
-      border-radius: 6px;
-
-      .tech-name {
-        margin: 0 8px;
-        flex: 1;
-        font-weight: 500;
-      }
-    }
-  }
-
-  .env-list {
-    .env-item {
-      margin-bottom: 16px;
-      padding: 12px;
-      background: #fafafa;
-      border-radius: 6px;
-
-      .env-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 8px;
-
-        .env-name {
-          font-weight: 500;
-        }
-      }
-
-      .env-url {
-        font-size: 12px;
-        color: #666;
-
-        a {
-          color: #1890ff;
-          text-decoration: none;
-
-          &:hover {
-            text-decoration: underline;
-          }
-        }
-      }
-    }
-  }
-
-  .mb-4 {
-    margin-bottom: 16px;
-  }
-
-  .mt-4 {
-    margin-top: 16px;
-  }
-}
-
-// 依赖信息样式
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  
-  .ant-spin {
-    margin-bottom: 16px;
-  }
-  
-  .loading-text {
-    color: #666;
-    font-size: 14px;
-  }
-}
-
-.error-container {
+<style scoped>
+.app-basic-info {
   padding: 20px;
 }
 
-.no-data-container {
-  padding: 40px;
+.info-descriptions {
+  margin-bottom: 30px;
+}
+
+.extra-info-section {
+  margin-top: 20px;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  padding: 20px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.extra-info-content {
+  min-height: 200px;
+}
+
+.extra-info-textarea {
+  width: 100%;
+  min-height: 200px;
+}
+
+.no-data {
+  color: #999;
   text-align: center;
+  padding: 40px 0;
 }
 
-.dependency-section {
-  .dependency-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #f0f0f0;
-    
-    .dependency-title {
-      display: flex;
-      align-items: center;
-      font-weight: 500;
-      font-size: 16px;
-      color: #262626;
-      
-      .anticon {
-        margin-right: 8px;
-      }
-    }
-  }
-}
-
-.dependency-descriptions {
-  :deep(.ant-descriptions-item-label) {
-    font-weight: 500;
-    color: #262626;
-    background-color: #fafafa;
-    width: 60%;
-  }
-  
-  :deep(.ant-descriptions-item-content) {
-    width: 40%;
-  }
-  
-  :deep(.ant-tag) {
-    margin: 0;
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    font-size: 12px;
-    border-radius: 4px;
-  }
-  
-  :deep(.ant-descriptions-item) {
-    padding-bottom: 8px;
-  }
+.editor-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  background: #fafafa;
+  border-top: 1px solid #e8e8e8;
 }
 </style>

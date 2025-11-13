@@ -40,11 +40,11 @@ export enum Api {
   // Jenkins 创建流水线 Job（走 project 模块的后端）
   createJenkinsPipeline = '/verto/project/pipeline/jenkins/create',
   // 新增：应用-流水线绑定相关
-  bindingList = '/verto/appmanage/pipeline/binding/list',
-  bindingSave = '/verto/appmanage/pipeline/binding/save',
-  bindingDelete = '/verto/appmanage/pipeline/binding/delete',
-  bindingDetail = '/verto/appmanage/pipeline/binding/detail',
-  bindingValidate = '/verto/appmanage/pipeline/binding/validate',
+  bindingList = '/verto/pipeline/binding/list',
+  bindingSave = '/verto/pipeline/binding/save',
+  bindingDelete = '/verto/pipeline/binding/delete',
+  bindingDetail = '/verto/pipeline/binding/detail',
+  bindingValidate = '/verto/pipeline/binding/validate',
   
   // 获取应用 package.json 内容
   getPackageJson = '/verto/appmanage/app/package-json',
@@ -420,5 +420,5 @@ export const getBindingDetail = (id: string) => {
 };
 
 export const validateBinding = (jobName: string) => {
-  return defHttp.get({ url: Api.bindingValidate, params: { jobName } }, { isTransformResponse: false });
+  return defHttp.post({ url: Api.bindingValidate, data: { jobName } }, { isTransformResponse: false });
 };

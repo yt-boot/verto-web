@@ -28,9 +28,9 @@
 
     <!-- 已绑定的 Jenkins 流水线（表格展示） -->
     <div class="jenkins-bind-list">
-      <a-table
+      <BasicTable
         :columns="bindingColumns"
-        :data-source="bindings"
+        :dataSource="bindings"
         :pagination="false"
         rowKey="id"
         :locale="{ emptyText: '暂无绑定的 Jenkins 流水线，请点击右上角“绑定流水线”进行配置' }"
@@ -46,7 +46,7 @@
           </template>
           <template v-else-if="column.key === 'jobUrl'">
             <template v-if="record.jobUrl">
-              <a :href="record.jobUrl" target="_blank">{{ record.jobUrl }}</a>
+              <a :href="record.jobUrl" target="_blank" style="color: #1890ff;">查看链接</a>
             </template>
             <template v-else>无链接</template>
           </template>
@@ -57,7 +57,7 @@
             </a-space>
           </template>
         </template>
-      </a-table>
+      </BasicTable>
     </div>
 
     <!-- 新增：绑定 Jenkins 流水线抽屉 -->
@@ -109,6 +109,7 @@
   import { BasicDrawer } from '/@/components/Drawer';
   import { BasicForm, FormSchema } from '/@/components/Form';
   import { useForm } from '/@/components/Form/index';
+  import { BasicTable } from '/@/components/Table';
   import type { PipelineConfig } from '../../config/data/Config.data';
 
   // 导入应用管理相关的API
@@ -158,35 +159,19 @@
 
   // 表格列定义
   const bindingColumns = [
-    { title: '作业名', dataIndex: 'jobName', key: 'jobName' },
-    { title: '环境', dataIndex: 'environment', key: 'environment', width: 120 },
-    { title: '链接', dataIndex: 'jobUrl', key: 'jobUrl' },
+    { title: '作业名', dataIndex: 'jobName', key: 'jobName', width: 150 },
+    { title: '类型', dataIndex: 'pipelineType', key: 'pipelineType', width: 120, customRender: ({ text }) => {
+      const typeMap = { 'build': '构建', 'deploy': '部署', 'test': '测试' };
+      return typeMap[text] || text;
+    } },
+    { title: '链接', dataIndex: 'jobUrl', key: 'jobUrl' , width: 200},
+    { title: '状态', dataIndex: 'status', key: 'status', width: 80, customRender: ({ text }) => {
+      const statusMap = { enabled: '启用', disabled: '禁用' };
+      return statusMap[text] || text;
+    }},
     { title: '备注', dataIndex: 'remark', key: 'remark' },
-    { title: '操作', key: 'actions', width: 160 },
+    { title: '操作', key: 'actions', width: 160, fixed: 'right' },
   ];
-
-  // 可选下拉的选中值（不入库，仅用于回填）
-  // 移除“从已有配置复制”等复杂逻辑
-
-  // 移除复杂的配置编辑状态
-
-  // 编辑配置：打开抽屉并回填
-  // 移除配置编辑入口
-
-  // 删除配置（占位实现）
-  // 移除配置删除逻辑
-
-  // 抽屉关闭
-  // 移除配置抽屉关闭
-
-  // 抽屉保存（与 savePipelineConfig 对接）
-  // 移除配置保存逻辑
-
-  // 将 PipelineConfig 转换为 Jenkins Declarative Pipeline 内联脚本
-  // 移除 Jenkins 内联脚本构建逻辑
-
-  // 从当前配置直接创建 Jenkins 作业（内联脚本模式），并保存到应用流水线配置
-  // 移除“从配置创建 Jenkins Job”逻辑
 
   // 绑定 Jenkins 流水线抽屉 & 表单
   const bindDrawerVisible = ref(false);
@@ -202,6 +187,33 @@
       component: 'Input',
       required: true,
       componentProps: { placeholder: '例如：my-app-pipeline' },
+    },
+    {
+      field: 'pipelineType',
+      label: '流水线类型',
+      component: 'Select',
+      required: true,
+      defaultValue: 'build',
+      componentProps: {
+        options: [
+          { label: '构建', value: 'build' },
+          { label: '部署', value: 'deploy' },
+          { label: '测试', value: 'test' }
+        ]
+      }
+    },
+    {
+      field: 'status',
+      label: '状态',
+      component: 'Select',
+      required: true,
+      defaultValue: 'enabled',
+      componentProps: {
+        options: [
+          { label: '启用', value: 'enabled' },
+          { label: '禁用', value: 'disabled' }
+        ]
+      }
     },
 
     {
@@ -235,11 +247,12 @@
       console.log(resp, 'resp----');
       const list = resp?.result?.records || [];
       bindings.value = (list || []).map((b: any) => ({
-        id: b.id || b.bindingId || b.key || '',
-        jobName: b.jobName || b.name || '-',
-        jobUrl: b.jobUrl || b.url || '',
-        remark: b.remark || b.description || '',
-        environment: b.environment || 'test',
+        id: b.id || '',
+        jobName: b.pipelineName || b.name || '-',
+        pipelineType: b.pipelineType || 'build', // 使用pipelineType字段，表格显示时会通过customRender映射为中文
+        jobUrl: b.jobUrl || '',
+        status: b.status || 'enabled', // 添加status字段
+        remark: b.description || b.remark || b.config?.description || '',
       }));
     } catch (e) {
       console.error(e);
@@ -261,10 +274,16 @@
     editingBindingId.value = item.id;
     editingBindingEnv.value = item.environment;
     nextTick(() => {
+      // 从中文值反向映射到英文键，如果需要
+      const typeReverseMap = { '构建': 'build', '部署': 'deploy', '测试': 'test' };
+      const pipelineTypeValue = typeReverseMap[item.pipelineType] || item.pipelineType || 'build';
+      
       setBindFormValues({
         jobName: item.jobName,
+        pipelineType: pipelineTypeValue,
         remark: item.remark,
         jobUrl: item.jobUrl,
+        status: item.status || 'enabled'
       });
     });
   }
@@ -282,11 +301,12 @@
         console.warn('validateBinding failed:', e);
       }
       const payload: any = {
-        appId: props.appId,
-        jobName: values.jobName,
-        remark: values.remark,
+        applicationId: props.appId,
+        pipelineName: values.jobName,
+        pipelineType: values.pipelineType || 'build', // 使用表单中的pipelineType值
+        status: values.status || 'enabled', // 使用表单中的status值
         jobUrl: values.jobUrl,
-        environment: editingBindingEnv.value || defaultEnvironment,
+        description: values.remark // 直接使用表单中的remark作为description字段
       };
       if (editingBindingId.value) payload.id = editingBindingId.value;
       await saveBinding(payload);
