@@ -26,6 +26,9 @@
         <a-descriptions-item label="应用负责人">
           {{ getPersonsName(appInfo.managers) || '暂无数据' }}
         </a-descriptions-item>
+        <a-descriptions-item label="应用等级">
+          {{ getAppLevelText(appInfo.appLevel) || '其他' }}
+        </a-descriptions-item>
         <a-descriptions-item label="应用描述" :span="2">
           {{ appInfo.appDescription || '暂无数据' }}
         </a-descriptions-item>
@@ -63,7 +66,7 @@
 <script lang="ts" setup>
 import { ref, watch, onMounted } from 'vue';
 import { useMessage } from '/@/hooks/web/useMessage';
-import { editApp, getActiveStaffList, getUserList, getDomainDict } from '../AppManage.api';
+import { editApp, getActiveStaffList, getUserList, getDomainDict, getAppLevelDict } from '../AppManage.api';
 
 // Props定义
 const props = defineProps<{
@@ -77,8 +80,9 @@ const emit = defineEmits(['save']);
 // 消息提示
 const { createMessage } = useMessage();
 
-// 缓存：领域字典与人员映射
+// 缓存：领域字典、应用等级字典与人员映射
 const domainMapRef = ref<Map<string, string>>(new Map());
+const appLevelMapRef = ref<Map<string, string>>(new Map());
 const staffIdToNameRef = ref<Map<string, string>>(new Map());
 const staffUsernameToNameRef = ref<Map<string, string>>(new Map());
 // 系统用户映射
@@ -167,9 +171,26 @@ const loadDomainMap = async () => {
   }
 };
 
+// 加载应用等级字典
+const loadAppLevelMap = async () => {
+  try {
+    const resp = await getAppLevelDict();
+    const items = resp?.result || resp || [];
+    const map = new Map<string, string>();
+    (items || []).forEach((it: any) => {
+      if (it && (it.value != null)) {
+        map.set(String(it.value), it.text || it.label || it.title || String(it.value));
+      }
+    });
+    appLevelMapRef.value = map;
+  } catch (e) {
+    console.warn('加载应用等级字典失败', e);
+  }
+};
+
 // 加载所有映射数据
 const loadAllMaps = async () => {
-  await Promise.all([loadStaffMaps(), loadDomainMap()]);
+  await Promise.all([loadStaffMaps(), loadDomainMap(), loadAppLevelMap()]);
 };
 
 
@@ -197,6 +218,7 @@ const processExtraInfo = (extraInfo: any): string => {
 const appInfo = ref({
   appName: props.appDetail?.appName || '',
   domain: props.appDetail?.domain || '',
+  appLevel: props.appDetail?.appLevel || 'other',
   gitUrl: props.appDetail?.gitUrl || '',
   createBy: props.appDetail?.createBy || '',
   managers: props.appDetail?.managers || '',
@@ -217,6 +239,7 @@ watch(() => props.appDetail, (newDetail) => {
     appInfo.value = {
       appName: newDetail.appName || '',
       domain: newDetail.domain || '',
+      appLevel: newDetail.appLevel || 'other',
       gitUrl: newDetail.gitUrl || '',
       createBy: newDetail.createBy || '',
       managers: newDetail.managers || '',
@@ -240,6 +263,12 @@ watch(() => props.appDetail, (newDetail) => {
 function getDomainText(domain?: string): string {
   const domainCode = domain != null ? String(domain) : '';
   return domainMapRef.value.get(domainCode) || domainCode || '未分类';
+}
+
+// 获取应用等级文本
+function getAppLevelText(appLevel?: string): string {
+  const appLevelCode = appLevel != null ? String(appLevel) : '';
+  return appLevelMapRef.value.get(appLevelCode) || appLevelCode || '其他';
 }
 
 // 开始编辑详细信息

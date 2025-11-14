@@ -128,6 +128,18 @@ export const formSchema: FormSchema[] = [
     },
   },
   {
+    label: '应用等级',
+    field: 'appLevel',
+    required: true,
+    component: 'JDictSelectTag',
+    componentProps: {
+      dictCode: 'app_level',
+      placeholder: '请选择应用等级',
+      mode: undefined, // 单选
+    },
+    defaultValue: 'other',
+  },
+  {
     label: '应用负责人',
     field: 'managers',
     required: true,
@@ -218,10 +230,10 @@ export interface AppManageModel {
   appDescription: string;
   gitUrl: string;
   templateType?: string;
-  // 新建项目时用于组合仓库地址
   appPath?: string;
   repoName?: string;
   domain: string;
+  appLevel: string;
   managers: string[];
   createTime?: string;
   updateTime?: string;
@@ -235,6 +247,7 @@ export interface AppManageModel {
 export interface AppManageQueryParam {
   appName?: string;
   domain?: string;
+  appLevel?: string;
   pageNo?: number;
   pageSize?: number;
 }

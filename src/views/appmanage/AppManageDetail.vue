@@ -9,6 +9,7 @@
     :closable="true"
     :draggable="false"
     :footer="null"
+    @visible-change="handleVisibleChange"
     class="app-manage-detail-modal"
   >
     <div class="app-detail">
@@ -43,12 +44,12 @@
 </template>
 
 <script lang="ts">
-  import { defineComponent, ref, onMounted } from 'vue';
+  import { defineComponent, ref, onMounted, defineExpose, watch } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { Card, Button, Row, Col, Spin, Tag, message, Tabs, TabPane, Avatar } from 'ant-design-vue';
   import Icon from '/@/components/Icon';
   import { useDrawer } from '/@/components/Drawer';
-  import { BasicModal, useModal } from '/@/components/Modal';
+  import { BasicModal, useModalInner } from '/@/components/Modal';
   import { useClipboard } from '@vueuse/core';
   import { formatToDateTime } from '/@/utils/dateUtil';
   import { getAppById, deleteApp, getAppStatistics } from './AppManage.api';
@@ -91,8 +92,25 @@
       // 抽屉
       const [registerDrawer, { openDrawer }] = useDrawer();
 
-      // 详情全屏弹窗
-      const [registerDetailModal, { openModal, closeModal }] = useModal();
+      // 详情全屏弹窗 - 使用 useModalInner 作为内部组件
+      const [registerDetailModal, { setModalProps, redoModalHeight }] = useModalInner((data) => {
+        // 弹窗打开时触发，加载数据
+        if (data && data.appId) {
+          // 如果传入了appId，则加载详情
+          currentAppId.value = data.appId;
+          loadAppDetail();
+          loadAppStatistics();
+        }
+      });
+
+      // 监听props变化，自动加载数据
+      watch(() => props.appId, (newAppId) => {
+        if (newAppId) {
+          currentAppId.value = newAppId;
+          loadAppDetail();
+          loadAppStatistics();
+        }
+      });
 
       // 剪贴板
       const { copy, copied: copiedRef } = useClipboard();
@@ -102,6 +120,8 @@
       const loading = ref(false);
       const appDetail = ref<any>(null);
       const activeTabKey = ref('basic');
+      // 本地响应式appId，用于存储当前操作的应用ID
+      const currentAppId = ref(props.appId);
 
       // 统计数据
       const projectCount = ref(12);
@@ -112,7 +132,7 @@
        * 加载应用详情
        */
       const loadAppDetail = async () => {
-        const appId = (route.params.id as string) || props.appId;
+        const appId = (route.params.id as string) || currentAppId.value;
         if (!appId) {
           message.error('应用ID不能为空');
           return;
@@ -138,7 +158,7 @@
        * 加载应用统计数据
        */
       const loadAppStatistics = async () => {
-        const appId = (route.params.id as string) || props.appId;
+        const appId = (route.params.id as string) || currentAppId.value;
         if (!appId) {
           return;
         }
@@ -165,7 +185,7 @@
       const goBack = () => {
         console.log('goBack 方法被调用');
         // 关闭全屏详情弹窗
-        closeModal();
+        setModalProps({ visible: false });
         // 通知父组件已关闭，用于卸载组件
         emit('closed');
         // 如果当前是通过详情路由打开，则回到列表页
@@ -255,10 +275,31 @@
 
       // 组件挂载时加载数据
       onMounted(() => {
-        // 默认以全屏Modal打开详情
-        openModal(true);
-        loadAppDetail();
-        loadAppStatistics();
+        // 不再默认打开弹窗，由父组件控制
+        if (props.appId) {
+          loadAppDetail();
+          loadAppStatistics();
+        }
+      });
+
+      /**
+       * 处理弹窗显示状态变化
+       */
+      const handleVisibleChange = (visible: boolean) => {
+        console.log('弹窗状态变化:', visible);
+        if (visible && currentAppId.value) {
+          loadAppDetail();
+          loadAppStatistics();
+        }
+      };
+
+      /**
+       * 暴露方法给父组件
+       */
+      defineExpose({
+        setModalProps,
+        loadAppDetail,
+        handleVisibleChange
       });
 
       return {
@@ -269,10 +310,10 @@
         projectCount,
         commitCount,
         deployCount,
+        currentAppId,
         registerDrawer,
         registerDetailModal,
-        openModal,
-        closeModal,
+        setModalProps,
         goBack,
         handleEdit,
         handleDelete,
@@ -282,6 +323,7 @@
         formatDate,
         handleSuccess,
         handleSwitchToConfig,
+        handleVisibleChange
       };
     },
   });

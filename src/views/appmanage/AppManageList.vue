@@ -6,9 +6,16 @@
         <a-button type="primary" preIcon="ant-design:plus-outlined" @click="handleCreateApp">创建应用</a-button>
       </template>
       <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'domain'">
-          <a-tag color="blue">{{ record.domain_dictText || '未分类' }}</a-tag>
-        </template>
+          <template v-if="column.key === 'domain'">
+            <a-tag color="blue">{{ record.domain_dictText || '未分类' }}</a-tag>
+          </template>
+          <template v-if="column.key === 'appLevel'">
+            <a-tag 
+              :color="(appLevelColorMap && appLevelColorMap.get((record.appLevel || '').toString())) || 'default'"
+            >
+              {{ record.appLevel_dictText || record.appLevel || '其他' }}
+            </a-tag>
+          </template>
         <template v-if="column.key === 'createBy'">
           <span>{{ record.createBy_dictText || record.createBy }}</span>
         </template>
@@ -50,7 +57,7 @@
     <AppManageModal @register="registerDrawer" @success="handleSuccess" />
     
     <!-- 应用详情（全屏Modal） -->
-    <AppManageDetail v-if="detailVisible" :appId="detailAppId" @closed="detailVisible = false" />
+    <AppManageDetail ref="detailRef" :appId="detailAppId" />
   </div>
   
 </template>
@@ -61,7 +68,7 @@
   import { useDrawer } from '/@/components/Drawer';
   import AppManageModal from './components/AppManageModal.vue';
   import AppManageDetail from './AppManageDetail.vue';
-  import { getAppList, deleteApp, getDomainDict, getActiveStaffList, getUserList } from './AppManage.api';
+  import { getAppList, deleteApp, getDomainDict, getAppLevelDict, getActiveStaffList, getUserList } from './AppManage.api';
   import { useMessage } from '/@/hooks/web/useMessage';
   import { useRouter } from 'vue-router';
   import type { AppManageModel } from './AppManage.data';
@@ -76,8 +83,8 @@
       
       // 初始加载时不再预获取映射数据，改为在listApp接口中获取
       
-      // 详情弹窗控制
-      const detailVisible = ref(false);
+      // 详情弹窗引用
+      const detailRef = ref(null);
       const detailAppId = ref('');
 
       // 列定义
@@ -87,6 +94,12 @@
           title: '所属领域', 
           dataIndex: 'domain_dictText', 
           key: 'domain', 
+          width: 120
+        },
+        { 
+          title: '应用等级', 
+          dataIndex: 'appLevel_dictText', 
+          key: 'appLevel', 
           width: 120
         },
         { 
@@ -106,6 +119,9 @@
 
       // 缓存：领域字典与人员映射
     const domainMapRef = ref<Map<string, string>>(new Map());
+    const appLevelMapRef = ref<Map<string, string>>(new Map());
+    // 缓存应用等级颜色映射
+    const appLevelColorMapRef = ref<Map<string, string>>(new Map());
     const staffIdToNameRef = ref<Map<string, string>>(new Map());
     const staffUsernameToNameRef = ref<Map<string, string>>(new Map());
     // 系统用户（用于 createBy、managers 的用户名/用户ID 映射）
@@ -128,6 +144,39 @@
           domainMapRef.value = map;
         } catch (e) {
           console.warn('加载领域字典失败', e);
+        }
+      }
+
+      async function ensureAppLevelMap() {
+        if (appLevelMapRef.value.size > 0) return;
+        try {
+          const resp = await getAppLevelDict();
+          // 确保正确获取result数组
+          const items = resp?.result || [];
+          const map = new Map<string, string>();
+          const colorMap = new Map<string, string>();
+          
+          // 处理字典项，确保正确获取value、text和color
+          (items || []).forEach((it: any) => {
+            if (it && (it.value != null)) {
+              const valueStr = String(it.value);
+              // 优先使用text字段，其次是label或title
+              map.set(valueStr, it.text || it.label || it.title || valueStr);
+              // 确保正确获取颜色配置
+              if (it.color && typeof it.color === 'string') {
+                colorMap.set(valueStr, it.color);
+              }
+            }
+          });
+          
+          // 更新引用
+          appLevelMapRef.value = map;
+          appLevelColorMapRef.value = colorMap;
+          
+          console.log('应用等级字典加载成功:', map);
+          console.log('应用等级颜色映射:', colorMap);
+        } catch (e) {
+          console.warn('加载应用等级字典失败', e);
         }
       }
 
@@ -181,6 +230,7 @@
       // 处理记录，添加映射后的文本字段
       function processRecordsWithMaps(rows: AppManageModel[]): AppManageModel[] {
         const domainMap = domainMapRef.value;
+        const appLevelMap = appLevelMapRef.value;
         // 合并 staff 和 user 两类映射，优先使用staff数据
         const id2name = new Map([...staffIdToNameRef.value, ...userIdToNameRef.value]);
         const username2name = new Map([...staffUsernameToNameRef.value, ...userUsernameToNameRef.value]);
@@ -189,6 +239,10 @@
           // 处理领域文本
           const domainCode = r?.domain != null ? String(r.domain) : '';
           const domainText = domainMap.get(domainCode) || domainCode || '未分类';
+          
+          // 处理应用等级文本
+          const appLevelCode = r?.appLevel != null ? String(r.appLevel) : 'other';
+          const appLevelText = appLevelMap.get(appLevelCode) || appLevelCode || '其他';
           
           // 处理应用负责人文本
           const managersRaw = r?.managers;
@@ -211,6 +265,7 @@
           return {
             ...r,
             domain_dictText: domainText,
+            appLevel_dictText: appLevelText,
             managers_dictText: managersText,
             createBy_dictText: createByText
           };
@@ -219,23 +274,28 @@
 
       // 数据查询并处理映射关系
       async function listApp(params: Recordable): Promise<{ records: AppManageModel[]; total: number }> {
-        // 获取应用列表数据
-        const res = await getAppList(params);
-        if (res && res.success) {
-          const r = res.result || {};
-          const rawRecords = r.records || [];
-          
-          // 获取所有必要的映射数据
-          await Promise.all([ensureDomainMap(), ensureStaffMaps(), ensureUserMaps()]);
-          
-          // 处理id与name的映射，生成增强后的记录
-          const enhancedRecords = processRecordsWithMaps(rawRecords);
-          
-          return { records: enhancedRecords, total: r.total || rawRecords.length || 0 };
+        try {
+          // 获取应用列表数据
+          const res = await getAppList(params);
+          if (res && res.success) {
+            const r = res.result || {};
+            const rawRecords = r.records || [];
+            
+            // 获取所有必要的映射数据
+            await Promise.all([ensureDomainMap(), ensureAppLevelMap(), ensureStaffMaps(), ensureUserMaps()]);
+            
+            // 处理id与name的映射，生成增强后的记录
+            const enhancedRecords = processRecordsWithMaps(rawRecords);
+            
+            return { records: enhancedRecords, total: r.total || rawRecords.length || 0 };
+          }
+          createMessage.error(res?.message || '加载数据失败');
+        } catch (error) {
+          console.error('获取应用列表失败:', error);
+          createMessage.error('获取应用列表失败');
+        }
+        return { records: [], total: 0 };
       }
-      createMessage.error(res?.message || '加载数据失败');
-      return { records: [], total: 0 };
-    }
 
     const [registerTable, { reload }] = useTable({
         title: '应用列表',
@@ -268,6 +328,20 @@
               },
               colProps: { span: 8 },
             },
+            { field: 'appLevel',
+              label: '应用等级',
+              component: 'ApiSelect',
+              componentProps: {
+                api: getAppLevelDict,
+                labelField: 'text',
+                valueField: 'value',
+                resultField: 'result',
+                placeholder: '请选择应用等级',
+                allowClear: true,
+                showSearch: true,
+              },
+              colProps: { span: 8 },
+            },
           ],
         },
         showTableSetting: true,
@@ -285,7 +359,13 @@
 
       function handleViewDetail(record: AppManageModel) {
         detailAppId.value = String(record.id);
-        detailVisible.value = true;
+        // 通过ref调用子组件的方法，使用setModalProps打开弹窗并传递参数
+        if (detailRef.value) {
+          detailRef.value.setModalProps({ 
+            visible: true,
+            appId: String(record.id)
+          });
+        }
       }
 
       function handleDeleteClick(record: AppManageModel) {
@@ -310,7 +390,7 @@
       return {
       registerTable,
       registerDrawer,
-      detailVisible,
+      detailRef,
       detailAppId,
       handleCreateApp,
       handleEditClick,
@@ -318,6 +398,8 @@
       handleDeleteClick,
       handleOpenGit,
       handleSuccess,
+      // 应用等级颜色映射，供模板使用
+      appLevelColorMap: appLevelColorMapRef.value
     };
   },
 });

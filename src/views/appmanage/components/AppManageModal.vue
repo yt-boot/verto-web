@@ -112,6 +112,8 @@
           setFieldsValue({
             ...data.record,
             managers: normalizeManagers(data?.record?.managers),
+            // 确保appLevel字段正确设置
+            appLevel: data?.record?.appLevel || 'other'
           });
 
           // 编辑模式：不显示“项目来源”，且显示“已有项目”相关字段，隐藏“新建项目”相关字段

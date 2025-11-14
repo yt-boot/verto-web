@@ -13,6 +13,8 @@ export enum Api {
   getUserList = '/sys/user/list',
   // 获取领域字典
   getDomainDict = '/sys/dict/getDictItems/app_domain',
+  // 获取应用等级字典
+  getAppLevelDict = '/sys/dict/getDictItems/app_level',
   
   // Staff模块接口
   staffList = '/verto/staff/list',
@@ -147,6 +149,13 @@ export const getUserList = (params) => {
  */
 export const getDomainDict = () => {
   return defHttp.get({ url: Api.getDomainDict }, { isTransformResponse: false });
+};
+
+/**
+ * 获取应用等级字典数据
+ */
+export const getAppLevelDict = () => {
+  return defHttp.get({ url: Api.getAppLevelDict }, { isTransformResponse: false });
 };
 
 // ==================== 流水线相关API ====================
